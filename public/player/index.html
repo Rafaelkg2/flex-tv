@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flex TV</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --flex-blue: #3B82F6;
+    --flex-green: #16A34A;
+    --flex-gold: #D97706;
+    --bg: #0a0a0f;
+    --surface: #111827;
+    --text: #F9FAFB;
+    --muted: #6B7280;
+  }
+
+  html, body {
+    width: 100vw; height: 100vh;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    user-select: none;
+  }
+
+  /* ── Standby ──────────────────────────────────────────────────────────── */
+  #standby {
+    position: fixed; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    gap: 32px;
+    background: radial-gradient(ellipse 80% 60% at 50% 40%, #0f1f3d 0%, #0a0a0f 100%);
+    transition: opacity .6s ease;
+    z-index: 10;
+  }
+  #standby.hidden { opacity: 0; pointer-events: none; }
+
+  .standby-logo {
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+  }
+  .standby-logo svg { width: 80px; height: 80px; }
+  .standby-brand {
+    font-size: clamp(28px, 4vw, 52px);
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--flex-blue) 0%, #60a5fa 50%, var(--flex-green) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .standby-sub {
+    font-size: clamp(13px, 1.6vw, 22px);
+    color: var(--muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Dot-pulse de conexão */
+  .status-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--muted);
+    display: inline-block;
+    margin-right: 8px;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  .status-dot.connected { background: var(--flex-green); animation: none; }
+  .status-dot.error { background: #EF4444; animation: pulse-dot .8s ease-in-out infinite; }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: .4; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.3); }
+  }
+
+  .standby-status {
+    font-size: clamp(11px, 1.3vw, 16px);
+    color: var(--muted);
+    display: flex; align-items: center;
+  }
+
+  /* Clock no standby */
+  .standby-clock {
+    font-size: clamp(40px, 8vw, 120px);
+    font-weight: 200;
+    letter-spacing: -0.02em;
+    color: rgba(255,255,255,.08);
+    position: absolute;
+    bottom: 6vh;
+    right: 6vw;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .tv-name-badge {
+    position: absolute; top: 24px; left: 32px;
+    font-size: 13px; color: rgba(255,255,255,.2);
+    letter-spacing: 0.06em;
+  }
+
+  /* ── Content Stage ────────────────────────────────────────────────────── */
+  #stage {
+    position: fixed; inset: 0;
+    z-index: 5;
+    opacity: 0;
+    transition: opacity .5s ease;
+    background: #000;
+  }
+  #stage.visible { opacity: 1; }
+
+  #stage iframe,
+  #stage video {
+    width: 100%; height: 100%;
+    border: none;
+    display: block;
+  }
+
+  /* ── Countdown ────────────────────────────────────────────────────────── */
+  #countdown-screen {
+    width: 100%; height: 100%;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    background: var(--bg);
+    gap: clamp(16px, 3vh, 40px);
+  }
+  .cd-title {
+    font-size: clamp(20px, 3vw, 48px);
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+  }
+  .cd-timer {
+    font-size: clamp(80px, 18vw, 280px);
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+    background: linear-gradient(135deg, var(--flex-blue) 0%, #60a5fa 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .cd-subtitle {
+    font-size: clamp(14px, 1.8vw, 28px);
+    color: rgba(255,255,255,.4);
+  }
+  .cd-progress {
+    width: min(700px, 80vw);
+    height: 6px;
+    border-radius: 3px;
+    background: rgba(255,255,255,.1);
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .cd-progress-fill {
+    height: 100%;
+    background: var(--flex-blue);
+    border-radius: 3px;
+    transition: width .9s linear;
+  }
+  .cd-logo {
+    position: absolute;
+    bottom: 5vh; right: 5vw;
+    opacity: .25;
+  }
+
+  /* ── HTML Message ─────────────────────────────────────────────────────── */
+  #html-screen {
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+    padding: 8vw;
+    background: var(--bg);
+  }
+  #html-screen .msg-inner {
+    font-size: clamp(24px, 4vw, 64px);
+    text-align: center;
+    font-weight: 600;
+    line-height: 1.3;
+    color: var(--text);
+  }
+
+  /* ── Live badge ───────────────────────────────────────────────────────── */
+  .live-badge {
+    position: fixed;
+    top: 20px; right: 24px;
+    z-index: 100;
+    background: #DC2626;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    padding: 4px 12px;
+    border-radius: 4px;
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+  .live-badge.visible { display: flex; }
+  .live-badge::before {
+    content: '';
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: #fff;
+    animation: pulse-dot .8s ease-in-out infinite;
+  }
+</style>
+</head>
+<body>
+
+<!-- Standby -->
+<div id="standby">
+  <div class="tv-name-badge" id="tvNameBadge">—</div>
+
+  <div class="standby-logo">
+    <!-- Logo SVG inline: G hexagonal estilizado -->
+    <svg viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="40,4 72,22 72,58 40,76 8,58 8,22" fill="#1e3a5f" stroke="#3B82F6" stroke-width="2"/>
+      <text x="40" y="53" text-anchor="middle" font-family="system-ui" font-size="32" font-weight="900" fill="#3B82F6">G</text>
+    </svg>
+    <div class="standby-brand">Grupo Flex</div>
+    <div class="standby-sub">Digital Signage</div>
+  </div>
+
+  <div class="standby-status">
+    <span class="status-dot" id="statusDot"></span>
+    <span id="statusText">Conectando…</span>
+  </div>
+
+  <div class="standby-clock" id="standbyClock">00:00</div>
+</div>
+
+<!-- Stage: conteúdo ativo -->
+<div id="stage">
+  <!-- preenchido dinamicamente -->
+</div>
+
+<!-- Badge ao vivo -->
+<div class="live-badge" id="liveBadge">AO VIVO</div>
+
+<script>
+// ── Config ────────────────────────────────────────────────────────────────────
+
+// O tvId é persistido no localStorage para que a mesma TV reconecte com o mesmo ID
+const TV_ID = localStorage.getItem('flextv_id') || crypto.randomUUID();
+localStorage.setItem('flextv_id', TV_ID);
+
+const TV_NAME = localStorage.getItem('flextv_name') || 'TV-' + TV_ID.slice(0, 6).toUpperCase();
+localStorage.setItem('flextv_name', TV_NAME);
+
+// URL do servidor: auto-detecta o host atual (funciona local e no Render)
+const SERVER_URL = window.location.origin;
+
+// ── UI refs ───────────────────────────────────────────────────────────────────
+
+const standby    = document.getElementById('standby');
+const stage      = document.getElementById('stage');
+const statusDot  = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const liveBadge  = document.getElementById('liveBadge');
+const clockEl    = document.getElementById('standbyClock');
+const tvNameBadge = document.getElementById('tvNameBadge');
+
+tvNameBadge.textContent = TV_NAME;
+
+// ── Relógio standby ───────────────────────────────────────────────────────────
+
+function tickClock() {
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  clockEl.textContent = `${hh}:${mm}`;
+}
+tickClock();
+setInterval(tickClock, 15000);
+
+// ── Socket.io ─────────────────────────────────────────────────────────────────
+
+const socket = io(SERVER_URL, {
+  query: { role: 'tv', tvId: TV_ID, tvName: TV_NAME },
+  reconnectionDelay: 2000,
+  reconnectionDelayMax: 10000
+});
+
+socket.on('connect', () => {
+  statusDot.className = 'status-dot connected';
+  statusText.textContent = 'Conectado — aguardando conteúdo';
+});
+
+socket.on('disconnect', () => {
+  statusDot.className = 'status-dot error';
+  statusText.textContent = 'Reconectando…';
+});
+
+socket.on('connect_error', () => {
+  statusDot.className = 'status-dot error';
+  statusText.textContent = 'Erro de conexão — tentando novamente…';
+});
+
+socket.on('registered', ({ tvId, tvName }) => {
+  localStorage.setItem('flextv_id', tvId);
+  localStorage.setItem('flextv_name', tvName);
+  tvNameBadge.textContent = tvName;
+});
+
+// ── Comandos ──────────────────────────────────────────────────────────────────
+
+let countdownInterval = null;
+
+socket.on('command', payload => {
+  if (payload.action === 'show') showContent(payload.content);
+  if (payload.action === 'hide') showStandby();
+  if (payload.action === 'reload') window.location.reload();
+  if (payload.action === 'rename') {
+    localStorage.setItem('flextv_name', payload.name);
+    tvNameBadge.textContent = payload.name;
+  }
+});
+
+function showContent(content) {
+  clearInterval(countdownInterval);
+  stage.innerHTML = '';
+  liveBadge.classList.remove('visible');
+
+  if (content.type === 'url' || content.type === 'slides' || content.type === 'youtube') {
+    let src = content.url;
+    if (content.type === 'youtube') src = youtubeEmbedUrl(content.url);
+    const iframe = document.createElement('iframe');
+    iframe.src = src;
+    iframe.allow = 'autoplay; fullscreen; encrypted-media';
+    iframe.allowFullscreen = true;
+    stage.appendChild(iframe);
+
+  } else if (content.type === 'video') {
+    const video = document.createElement('video');
+    video.src = content.url;
+    video.autoplay = true;
+    video.loop = content.loop !== false;
+    video.muted = true;
+    video.playsInline = true;
+    video.style.objectFit = 'cover';
+    stage.appendChild(video);
+    video.play().catch(() => {});
+
+    if (content.url && content.url.includes('.m3u8')) {
+      liveBadge.classList.add('visible');
+    }
+
+  } else if (content.type === 'countdown') {
+    renderCountdown(content);
+
+  } else if (content.type === 'html') {
+    const div = document.createElement('div');
+    div.id = 'html-screen';
+    div.innerHTML = `<div class="msg-inner">${content.html}</div>`;
+    stage.appendChild(div);
+  }
+
+  standby.classList.add('hidden');
+  stage.classList.add('visible');
+
+  socket.emit('ack', { status: 'exibindo', content });
+}
+
+function showStandby() {
+  clearInterval(countdownInterval);
+  liveBadge.classList.remove('visible');
+  stage.classList.remove('visible');
+  setTimeout(() => {
+    stage.innerHTML = '';
+    standby.classList.remove('hidden');
+  }, 500);
+  socket.emit('ack', { status: 'standby', content: null });
+}
+
+// ── YouTube ───────────────────────────────────────────────────────────────────
+
+function youtubeEmbedUrl(input) {
+  let videoId = '';
+  try {
+    const url = new URL(input);
+    if (url.hostname === 'youtu.be') videoId = url.pathname.slice(1);
+    else videoId = url.searchParams.get('v') || '';
+  } catch { videoId = input; }
+  return `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&controls=0&loop=1&playlist=${videoId}&rel=0`;
+}
+
+// ── Countdown ─────────────────────────────────────────────────────────────────
+
+function renderCountdown(content) {
+  const totalMs = (content.durationMinutes || 5) * 60 * 1000;
+  const endTime = Date.now() + totalMs;
+
+  const div = document.createElement('div');
+  div.id = 'countdown-screen';
+  div.innerHTML = `
+    <div class="cd-title">${content.title || 'Iniciando em'}</div>
+    <div class="cd-timer" id="cdDisplay">00:00</div>
+    <div class="cd-subtitle">${content.subtitle || ''}</div>
+    <div class="cd-progress"><div class="cd-progress-fill" id="cdFill" style="width:100%"></div></div>
+    <div class="cd-logo">
+      <svg viewBox="0 0 60 60" width="48" height="48" fill="none">
+        <polygon points="30,3 54,16.5 54,43.5 30,57 6,43.5 6,16.5" fill="#1e3a5f" stroke="#3B82F6" stroke-width="1.5"/>
+        <text x="30" y="40" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="900" fill="#3B82F6">G</text>
+      </svg>
+    </div>
+  `;
+  stage.appendChild(div);
+
+  const cdDisplay = div.querySelector('#cdDisplay');
+  const cdFill    = div.querySelector('#cdFill');
+
+  function tick() {
+    const remaining = Math.max(0, endTime - Date.now());
+    const mins = Math.floor(remaining / 60000);
+    const secs = Math.floor((remaining % 60000) / 1000);
+    cdDisplay.textContent = `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+    cdFill.style.width = `${(remaining / totalMs * 100).toFixed(1)}%`;
+    if (remaining === 0) {
+      clearInterval(countdownInterval);
+      showStandby();
+    }
+  }
+  tick();
+  countdownInterval = setInterval(tick, 1000);
+}
+</script>
+</body>
+</html>

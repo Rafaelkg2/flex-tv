@@ -1,0 +1,19 @@
+{
+  "name": "flex-tv",
+  "version": "1.0.0",
+  "description": "Sistema de Digital Signage + IPTV interno — Grupo Flex",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.18.2",
+    "socket.io": "^4.7.2",
+    "uuid": "^9.0.1"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

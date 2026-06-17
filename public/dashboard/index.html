@@ -1,0 +1,903 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Flex TV — Painel de Controle</title>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #0f1117;
+  --surface:   #1a1f2e;
+  --surface2:  #232a3b;
+  --border:    rgba(255,255,255,.08);
+  --blue:      #3B82F6;
+  --blue-dark: #1d4ed8;
+  --green:     #16A34A;
+  --red:       #DC2626;
+  --gold:      #D97706;
+  --text:      #F9FAFB;
+  --muted:     #9CA3AF;
+  --muted2:    #4B5563;
+  --radius:    12px;
+  --font:      'Inter', system-ui, -apple-system, sans-serif;
+}
+
+html, body {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Layout ─────────────────────────────────────────────────────────────── */
+.app { display: flex; flex-direction: column; height: 100%; }
+
+.topbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 12px 20px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.topbar-brand { display: flex; align-items: center; gap: 10px; }
+.topbar-brand svg { width: 36px; height: 36px; }
+.topbar-title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.topbar-title span { color: var(--blue); }
+
+.conn-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted2); }
+.conn-dot.ok { background: var(--green); }
+.conn-dot.err { background: var(--red); animation: blink .8s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
+.tab-btn {
+  flex: 1; padding: 14px 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--muted); font-size: 13px; font-weight: 500;
+  letter-spacing: .03em; text-transform: uppercase;
+  border-bottom: 2px solid transparent;
+  transition: all .2s;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.tab-btn.active { color: var(--blue); border-color: var(--blue); }
+.tab-btn svg { width: 16px; height: 16px; }
+
+.tab-panel { display: none; flex: 1; overflow-y: auto; }
+.tab-panel.active { display: flex; flex-direction: column; }
+
+/* ── Botões ──────────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer;
+  font-size: 13px; font-weight: 600; letter-spacing: .02em;
+  transition: all .15s; white-space: nowrap;
+}
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover { background: var(--blue-dark); }
+.btn-danger  { background: var(--red); color: #fff; }
+.btn-danger:hover { background: #b91c1c; }
+.btn-ghost   { background: rgba(255,255,255,.06); color: var(--text); }
+.btn-ghost:hover { background: rgba(255,255,255,.1); }
+.btn-green   { background: var(--green); color: #fff; }
+.btn-green:hover { background: #15803d; }
+.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ── Forms ───────────────────────────────────────────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.field input, .field select, .field textarea {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 10px 12px; color: var(--text);
+  font-family: var(--font); font-size: 13px;
+  outline: none; transition: border-color .15s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
+.field select option { background: var(--surface2); }
+.field textarea { resize: vertical; min-height: 80px; }
+
+/* ── Login ───────────────────────────────────────────────────────────────── */
+#login-screen {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.login-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px; padding: 40px; width: 100%; max-width: 380px;
+  display: flex; flex-direction: column; gap: 24px;
+}
+.login-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.login-logo svg { width: 56px; height: 56px; }
+.login-logo h1 { font-size: 22px; font-weight: 800; }
+.login-logo p  { font-size: 13px; color: var(--muted); }
+.login-error { font-size: 12px; color: var(--red); display: none; }
+.login-error.visible { display: block; }
+
+/* ── Aba TVs ─────────────────────────────────────────────────────────────── */
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; flex-shrink: 0;
+}
+.panel-header h2 { font-size: 15px; font-weight: 700; }
+.panel-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+.tvs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+  padding: 0 16px 16px;
+}
+
+.tv-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  display: flex; flex-direction: column; gap: 10px;
+  transition: border-color .2s;
+  cursor: pointer;
+}
+.tv-card.selected { border-color: var(--blue); background: rgba(59,130,246,.06); }
+.tv-card-head { display: flex; align-items: center; justify-content: space-between; }
+.tv-card-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.tv-icon { font-size: 18px; }
+.tv-badge {
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 99px; text-transform: uppercase; letter-spacing: .06em;
+}
+.tv-badge.online  { background: rgba(22,163,74,.2); color: #4ade80; }
+.tv-badge.offline { background: rgba(220,38,38,.15); color: #f87171; }
+.tv-badge.exibindo{ background: rgba(59,130,246,.2); color: #93c5fd; }
+.tv-content-label { font-size: 12px; color: var(--muted); }
+
+.tv-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+.no-tvs {
+  grid-column: 1/-1;
+  display: flex; flex-direction: column; align-items: center;
+  padding: 48px 20px; gap: 12px; color: var(--muted);
+  text-align: center;
+}
+.no-tvs svg { width: 48px; height: 48px; opacity: .3; }
+.no-tvs p { font-size: 14px; }
+
+/* Barra de ação global (flutuante) */
+.global-action-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  padding: 12px 16px;
+  background: var(--surface); border-top: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.selection-info { font-size: 12px; color: var(--muted); flex: 1; }
+
+/* ── Aba Conteúdo ────────────────────────────────────────────────────────── */
+.content-layout {
+  display: grid; grid-template-columns: 1fr;
+  flex: 1; overflow: hidden;
+}
+@media (min-width: 700px) {
+  .content-layout { grid-template-columns: 1fr 320px; }
+}
+
+.content-list { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+
+.content-item {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 10px; padding: 12px 14px;
+  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  transition: border-color .15s;
+}
+.content-item:hover, .content-item.active { border-color: var(--blue); }
+.content-type-badge {
+  background: var(--surface2); border-radius: 6px; padding: 4px 8px;
+  font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+  letter-spacing: .05em; white-space: nowrap;
+}
+.content-label { font-weight: 600; font-size: 13px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.content-url   { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.content-del   { background: none; border: none; cursor: pointer; color: var(--muted2); padding: 4px; border-radius: 4px; flex-shrink: 0; }
+.content-del:hover { color: var(--red); }
+
+.content-sidebar {
+  border-left: 1px solid var(--border);
+  overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+.add-form-section {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.add-form-section h3 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+
+/* ── Aba Ao Vivo ─────────────────────────────────────────────────────────── */
+.live-panel {
+  padding: 20px; display: flex; flex-direction: column; gap: 20px;
+  max-width: 560px; width: 100%;
+}
+
+.live-status-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  display: flex; flex-direction: column; gap: 12px;
+}
+.live-indicator {
+  display: flex; align-items: center; gap: 10px;
+  font-size: 15px; font-weight: 700;
+}
+.live-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted2); }
+.live-dot.streaming { background: var(--red); animation: blink .8s ease-in-out infinite; }
+
+.hls-note {
+  font-size: 12px; color: var(--muted);
+  background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.2);
+  border-radius: 8px; padding: 10px 12px; line-height: 1.6;
+}
+.hls-note strong { color: var(--blue); }
+
+/* ── Modal ───────────────────────────────────────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
+  display: flex; align-items: flex-end; justify-content: center;
+  padding: 0;
+}
+@media (min-width: 560px) {
+  .modal-overlay { align-items: center; padding: 20px; }
+}
+.modal-overlay.hidden { display: none; }
+
+.modal {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-width: 480px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+@media (min-width: 560px) { .modal { border-radius: 20px; } }
+
+.modal-head { display: flex; align-items: center; justify-content: space-between; }
+.modal-head h2 { font-size: 16px; font-weight: 700; }
+.modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 22px; line-height: 1; }
+
+/* ── Toast ───────────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 20px; font-size: 13px; font-weight: 600;
+  transition: transform .3s ease;
+  z-index: 400; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,.4);
+}
+.toast.visible { transform: translateX(-50%) translateY(0); }
+.toast.success { border-color: var(--green); color: #4ade80; }
+.toast.error   { border-color: var(--red);   color: #f87171; }
+</style>
+</head>
+<body>
+
+<!-- Login -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">
+      <svg viewBox="0 0 56 56" fill="none">
+        <polygon points="28,3 51,16 51,40 28,53 5,40 5,16" fill="#1e3a5f" stroke="#3B82F6" stroke-width="1.5"/>
+        <text x="28" y="37" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="900" fill="#3B82F6">G</text>
+      </svg>
+      <h1>Flex TV</h1>
+      <p>Painel de Controle</p>
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="loginInput" placeholder="••••••••" autocomplete="current-password">
+    </div>
+    <div class="login-error" id="loginError">Senha incorreta. Tente novamente.</div>
+    <button class="btn btn-primary" id="loginBtn" style="width:100%">Entrar</button>
+  </div>
+</div>
+
+<!-- App principal -->
+<div class="app" id="mainApp" style="display:none">
+
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="topbar-brand">
+      <svg viewBox="0 0 36 36" fill="none">
+        <polygon points="18,2 33,10.5 33,25.5 18,34 3,25.5 3,10.5" fill="#1e3a5f" stroke="#3B82F6" stroke-width="1.2"/>
+        <text x="18" y="24" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="900" fill="#3B82F6">G</text>
+      </svg>
+      <div>
+        <div class="topbar-title">Grupo <span>Flex</span> TV</div>
+      </div>
+    </div>
+    <div class="conn-status">
+      <div class="conn-dot" id="connDot"></div>
+      <span id="connLabel">Conectando…</span>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="tvs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 2l-4 5-4-5"/></svg>
+      TVs
+    </button>
+    <button class="tab-btn" data-tab="content">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18M3 9h18"/></svg>
+      Conteúdo
+    </button>
+    <button class="tab-btn" data-tab="live">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M8 12a4 4 0 0 1 8 0"/><path d="M4.93 19.07A10 10 0 1 1 19.07 4.93"/></svg>
+      Ao Vivo
+    </button>
+  </div>
+
+  <!-- Aba TVs -->
+  <div class="tab-panel active" id="tab-tvs">
+    <div class="panel-header">
+      <div>
+        <h2>TVs Conectadas</h2>
+        <div class="panel-subtitle" id="tvCountLabel">Carregando…</div>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="selectAllBtn">Selecionar todas</button>
+    </div>
+    <div class="tvs-grid" id="tvsGrid">
+      <div class="no-tvs">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 2l-4 5-4-5"/></svg>
+        <p>Nenhuma TV conectada ainda.<br>Abra <strong>/player</strong> no browser de cada TV.</p>
+      </div>
+    </div>
+    <div class="global-action-bar">
+      <div class="selection-info" id="selectionInfo">Nenhuma TV selecionada</div>
+      <button class="btn btn-primary btn-sm" id="sendToSelectedBtn" disabled>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        Enviar conteúdo
+      </button>
+      <button class="btn btn-ghost btn-sm" id="hideSelectedBtn" disabled>
+        Voltar standby
+      </button>
+    </div>
+  </div>
+
+  <!-- Aba Conteúdo -->
+  <div class="tab-panel" id="tab-content">
+    <div class="content-layout" style="flex:1">
+      <div style="display:flex;flex-direction:column;overflow:hidden">
+        <div class="panel-header">
+          <div>
+            <h2>Biblioteca</h2>
+            <div class="panel-subtitle" id="contentCountLabel">0 itens</div>
+          </div>
+        </div>
+        <div class="content-list" id="contentList">
+          <div style="text-align:center;color:var(--muted);padding:32px 16px;font-size:13px">
+            Adicione conteúdo usando o formulário ao lado →
+          </div>
+        </div>
+      </div>
+      <div class="content-sidebar">
+        <div class="add-form-section">
+          <h3>Adicionar conteúdo</h3>
+          <div class="field">
+            <label>Tipo</label>
+            <select id="newType">
+              <option value="url">URL / Site / Dashboard</option>
+              <option value="youtube">YouTube</option>
+              <option value="slides">Google Slides</option>
+              <option value="video">Vídeo (MP4)</option>
+              <option value="countdown">Countdown</option>
+              <option value="html">Mensagem rápida</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Nome</label>
+            <input type="text" id="newLabel" placeholder="Ex: Dashboard de Vendas">
+          </div>
+          <div class="field" id="urlField">
+            <label>URL</label>
+            <input type="url" id="newUrl" placeholder="https://…">
+          </div>
+          <div class="field" id="htmlField" style="display:none">
+            <label>Texto ou HTML</label>
+            <textarea id="newHtml" placeholder="Reunião em 10 minutos!&#10;Sala de Reuniões A"></textarea>
+          </div>
+          <!-- Campos countdown -->
+          <div id="countdownFields" style="display:none;display:flex;flex-direction:column;gap:10px">
+            <div class="field">
+              <label>Título</label>
+              <input type="text" id="cdTitle" placeholder="Iniciando em">
+            </div>
+            <div class="field">
+              <label>Subtítulo</label>
+              <input type="text" id="cdSubtitle" placeholder="Aguarde…">
+            </div>
+            <div class="field">
+              <label>Duração (minutos)</label>
+              <input type="number" id="cdMinutes" value="5" min="1" max="999">
+            </div>
+          </div>
+          <button class="btn btn-primary" id="addContentBtn" style="width:100%">
+            + Adicionar à biblioteca
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aba Ao Vivo -->
+  <div class="tab-panel" id="tab-live">
+    <div class="live-panel">
+      <div class="live-status-card">
+        <div class="live-indicator">
+          <div class="live-dot" id="liveDot"></div>
+          <span id="liveStatusLabel">Sem transmissão ativa</span>
+        </div>
+        <div class="field">
+          <label>URL HLS do Mediamtx</label>
+          <input type="url" id="hlsUrl"
+            placeholder="http://192.168.1.x:8888/live/main/index.m3u8"
+            value="">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn btn-danger" id="startLiveBtn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+            Iniciar transmissão ao vivo
+          </button>
+          <button class="btn btn-ghost" id="stopLiveBtn" disabled>
+            Encerrar
+          </button>
+        </div>
+      </div>
+
+      <div class="hls-note">
+        <strong>Como usar:</strong><br>
+        1. Baixe o <strong>Mediamtx</strong> e execute <code>mediamtx.exe</code> no laptop.<br>
+        2. No OBS, configure: <em>Custom RTMP → rtmp://localhost:1935/live/main</em>.<br>
+        3. Cole a URL HLS acima (substitua o IP pelo do seu laptop).<br>
+        4. Clique em <strong>Iniciar transmissão ao vivo</strong>.<br>
+        <br>
+        Consulte <strong>mediamtx/README.md</strong> para o guia completo.
+      </div>
+
+      <div class="hls-note" style="border-color:rgba(217,119,6,.3);background:rgba(217,119,6,.06)">
+        <strong style="color:var(--gold)">Nota técnica:</strong> As TVs recebem a URL HLS e tocam o stream
+        com a tag <code>&lt;video&gt;</code> nativa. Nenhum software é necessário nas TVs.
+        A URL HLS deve ser acessível pela rede interna da Grupo Flex
+        (mesmo Wi-Fi que as TVs e o laptop do operador).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: selecionar conteúdo para enviar -->
+<div class="modal-overlay hidden" id="sendModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Enviar para TVs selecionadas</h2>
+      <button class="modal-close" id="sendModalClose">×</button>
+    </div>
+    <div class="field">
+      <label>Tipo de conteúdo</label>
+      <select id="modalType">
+        <option value="">— Selecione —</option>
+        <option value="url">URL / Site / Dashboard</option>
+        <option value="youtube">YouTube</option>
+        <option value="slides">Google Slides</option>
+        <option value="video">Vídeo (MP4)</option>
+        <option value="countdown">Countdown</option>
+        <option value="html">Mensagem rápida</option>
+      </select>
+    </div>
+    <div class="field" id="modalUrlField">
+      <label>URL</label>
+      <input type="url" id="modalUrl" placeholder="https://…">
+    </div>
+    <div class="field" id="modalHtmlField" style="display:none">
+      <label>Texto ou HTML</label>
+      <textarea id="modalHtml" placeholder="Reunião em 10 minutos!"></textarea>
+    </div>
+    <div id="modalCdFields" style="display:none;display:flex;flex-direction:column;gap:10px">
+      <div class="field"><label>Título</label><input type="text" id="modalCdTitle" placeholder="Iniciando em"></div>
+      <div class="field"><label>Subtítulo</label><input type="text" id="modalCdSub" placeholder="Aguarde…"></div>
+      <div class="field"><label>Duração (minutos)</label><input type="number" id="modalCdMin" value="5" min="1"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" id="sendModalCancelBtn">Cancelar</button>
+      <button class="btn btn-primary" id="sendModalConfirmBtn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        Enviar agora
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Estado ────────────────────────────────────────────────────────────────────
+let token = sessionStorage.getItem('flextv_token') || '';
+let socket = null;
+let tvList = [];
+let contentLib = [];
+let selectedTvIds = new Set();
+let isStreaming = false;
+
+// ── UI refs ───────────────────────────────────────────────────────────────────
+const loginScreen = document.getElementById('login-screen');
+const mainApp     = document.getElementById('mainApp');
+const loginInput  = document.getElementById('loginInput');
+const loginBtn    = document.getElementById('loginBtn');
+const loginError  = document.getElementById('loginError');
+
+const connDot   = document.getElementById('connDot');
+const connLabel = document.getElementById('connLabel');
+
+const tvsGrid       = document.getElementById('tvsGrid');
+const tvCountLabel  = document.getElementById('tvCountLabel');
+const selectionInfo = document.getElementById('selectionInfo');
+const selectAllBtn  = document.getElementById('selectAllBtn');
+const sendToSelectedBtn = document.getElementById('sendToSelectedBtn');
+const hideSelectedBtn   = document.getElementById('hideSelectedBtn');
+
+const contentList       = document.getElementById('contentList');
+const contentCountLabel = document.getElementById('contentCountLabel');
+const newType    = document.getElementById('newType');
+const newLabel   = document.getElementById('newLabel');
+const newUrl     = document.getElementById('newUrl');
+const newHtml    = document.getElementById('newHtml');
+const addContentBtn = document.getElementById('addContentBtn');
+
+const liveDot        = document.getElementById('liveDot');
+const liveStatusLabel= document.getElementById('liveStatusLabel');
+const hlsUrl         = document.getElementById('hlsUrl');
+const startLiveBtn   = document.getElementById('startLiveBtn');
+const stopLiveBtn    = document.getElementById('stopLiveBtn');
+
+const sendModal        = document.getElementById('sendModal');
+const sendModalClose   = document.getElementById('sendModalClose');
+const sendModalCancelBtn  = document.getElementById('sendModalCancelBtn');
+const sendModalConfirmBtn = document.getElementById('sendModalConfirmBtn');
+const modalType        = document.getElementById('modalType');
+const modalUrl         = document.getElementById('modalUrl');
+const modalHtml        = document.getElementById('modalHtml');
+const modalCdTitle     = document.getElementById('modalCdTitle');
+const modalCdSub       = document.getElementById('modalCdSub');
+const modalCdMin       = document.getElementById('modalCdMin');
+const modalUrlField    = document.getElementById('modalUrlField');
+const modalHtmlField   = document.getElementById('modalHtmlField');
+const modalCdFields    = document.getElementById('modalCdFields');
+
+const toast = document.getElementById('toast');
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimeout;
+function showToast(msg, type = 'success') {
+  toast.textContent = msg;
+  toast.className = `toast visible ${type}`;
+  clearTimeout(toastTimeout);
+  toastTimeout = setTimeout(() => toast.classList.remove('visible'), 3000);
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+async function tryLogin(password) {
+  loginBtn.disabled = true;
+  loginError.classList.remove('visible');
+  try {
+    const r = await fetch('/api/auth', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Erro');
+    token = data.token;
+    sessionStorage.setItem('flextv_token', token);
+    showApp();
+  } catch {
+    loginError.classList.add('visible');
+  } finally {
+    loginBtn.disabled = false;
+  }
+}
+
+loginBtn.addEventListener('click', () => tryLogin(loginInput.value));
+loginInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(loginInput.value); });
+
+// ── Socket.io ─────────────────────────────────────────────────────────────────
+function connectSocket() {
+  socket = io(window.location.origin, {
+    query: { role: 'dashboard', token }
+  });
+
+  socket.on('connect', () => {
+    connDot.className = 'conn-dot ok';
+    connLabel.textContent = 'Conectado';
+  });
+  socket.on('disconnect', () => {
+    connDot.className = 'conn-dot err';
+    connLabel.textContent = 'Reconectando…';
+  });
+  socket.on('auth_error', () => {
+    sessionStorage.removeItem('flextv_token');
+    token = '';
+    location.reload();
+  });
+  socket.on('tv_list', list => {
+    tvList = list;
+    renderTvGrid();
+  });
+}
+
+// ── Show app ──────────────────────────────────────────────────────────────────
+async function showApp() {
+  loginScreen.style.display = 'none';
+  mainApp.style.display = 'flex';
+  connectSocket();
+  await loadContentLib();
+}
+
+if (token) showApp();
+
+// ── TV Grid ───────────────────────────────────────────────────────────────────
+function renderTvGrid() {
+  const online = tvList.filter(t => t.status !== 'offline');
+  tvCountLabel.textContent = `${online.length} online · ${tvList.length} total`;
+
+  if (!tvList.length) {
+    tvsGrid.innerHTML = `<div class="no-tvs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 2l-4 5-4-5"/></svg>
+      <p>Nenhuma TV conectada ainda.<br>Abra <strong>/player</strong> no browser de cada TV.</p>
+    </div>`;
+    return;
+  }
+
+  tvsGrid.innerHTML = tvList.map(tv => {
+    const selected = selectedTvIds.has(tv.id);
+    const statusClass = tv.status === 'offline' ? 'offline' : tv.status === 'exibindo' ? 'exibindo' : 'online';
+    const statusLabel = tv.status === 'offline' ? 'Offline' : tv.status === 'exibindo' ? 'Exibindo' : 'Online';
+    const contentLabel = tv.currentContent ? (tv.currentContent.label || tv.currentContent.type || '—') : 'Standby';
+    return `<div class="tv-card ${selected ? 'selected' : ''}" data-id="${tv.id}">
+      <div class="tv-card-head">
+        <div class="tv-card-name">
+          <span class="tv-icon">📺</span>${escHtml(tv.name)}
+        </div>
+        <span class="tv-badge ${statusClass}">${statusLabel}</span>
+      </div>
+      <div class="tv-content-label">${escHtml(contentLabel)}</div>
+      <div class="tv-actions">
+        <button class="btn btn-primary btn-sm" onclick="openSendModal(['${tv.id}'])" ${tv.status==='offline'?'disabled':''}>Enviar</button>
+        <button class="btn btn-ghost btn-sm" onclick="hideTV('${tv.id}')" ${tv.status!=='exibindo'?'disabled':''}>Standby</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Re-bind click for selection
+  tvsGrid.querySelectorAll('.tv-card').forEach(card => {
+    card.addEventListener('click', e => {
+      if (e.target.tagName === 'BUTTON') return;
+      const id = card.dataset.id;
+      if (selectedTvIds.has(id)) selectedTvIds.delete(id);
+      else selectedTvIds.add(id);
+      updateSelectionUI();
+      renderTvGrid();
+    });
+  });
+
+  updateSelectionUI();
+}
+
+function updateSelectionUI() {
+  const count = selectedTvIds.size;
+  selectionInfo.textContent = count === 0 ? 'Nenhuma TV selecionada' : `${count} TV${count>1?'s':''} selecionada${count>1?'s':''}`;
+  sendToSelectedBtn.disabled = count === 0;
+  hideSelectedBtn.disabled = count === 0;
+}
+
+selectAllBtn.addEventListener('click', () => {
+  const onlineTvs = tvList.filter(t => t.status !== 'offline');
+  if (selectedTvIds.size === onlineTvs.length) {
+    selectedTvIds.clear();
+  } else {
+    onlineTvs.forEach(tv => selectedTvIds.add(tv.id));
+  }
+  updateSelectionUI();
+  renderTvGrid();
+});
+
+sendToSelectedBtn.addEventListener('click', () => openSendModal([...selectedTvIds]));
+hideSelectedBtn.addEventListener('click', () => {
+  if (!selectedTvIds.size) return;
+  socket.emit('command', { tvIds: [...selectedTvIds], payload: { action: 'hide' } });
+  showToast('Voltando ao standby…');
+});
+
+function hideTV(tvId) {
+  socket.emit('command', { tvIds: [tvId], payload: { action: 'hide' } });
+  showToast('TV voltando ao standby');
+}
+
+// ── Send modal ────────────────────────────────────────────────────────────────
+let modalTargetIds = [];
+
+function openSendModal(tvIds) {
+  modalTargetIds = tvIds;
+  sendModal.classList.remove('hidden');
+  modalType.value = '';
+  updateModalFields();
+}
+
+function closeModal() { sendModal.classList.add('hidden'); }
+sendModalClose.addEventListener('click', closeModal);
+sendModalCancelBtn.addEventListener('click', closeModal);
+sendModal.addEventListener('click', e => { if (e.target === sendModal) closeModal(); });
+
+modalType.addEventListener('change', updateModalFields);
+
+function updateModalFields() {
+  const t = modalType.value;
+  modalUrlField.style.display  = ['url','youtube','slides','video'].includes(t) ? '' : 'none';
+  modalHtmlField.style.display = t === 'html' ? '' : 'none';
+  modalCdFields.style.display  = t === 'countdown' ? 'flex' : 'none';
+  if (t === 'countdown') modalCdFields.style.flexDirection = 'column';
+}
+updateModalFields();
+
+sendModalConfirmBtn.addEventListener('click', () => {
+  const t = modalType.value;
+  if (!t) { showToast('Selecione um tipo de conteúdo', 'error'); return; }
+
+  let content = { type: t };
+  if (['url','youtube','slides','video'].includes(t)) {
+    if (!modalUrl.value) { showToast('URL obrigatória', 'error'); return; }
+    content.url = modalUrl.value;
+  }
+  if (t === 'html') {
+    if (!modalHtml.value) { showToast('Texto obrigatório', 'error'); return; }
+    content.html = modalHtml.value;
+  }
+  if (t === 'countdown') {
+    content.title    = modalCdTitle.value || 'Iniciando em';
+    content.subtitle = modalCdSub.value;
+    content.durationMinutes = parseInt(modalCdMin.value) || 5;
+  }
+
+  socket.emit('command', { tvIds: modalTargetIds, payload: { action: 'show', content } });
+  closeModal();
+  showToast(`Conteúdo enviado para ${modalTargetIds.length} TV${modalTargetIds.length>1?'s':''}!`);
+});
+
+// ── Conteúdo Biblioteca ───────────────────────────────────────────────────────
+async function loadContentLib() {
+  try {
+    const r = await fetch('/api/content', { headers: { 'x-flex-token': token } });
+    contentLib = await r.json();
+    renderContentList();
+  } catch { showToast('Erro ao carregar biblioteca', 'error'); }
+}
+
+function renderContentList() {
+  contentCountLabel.textContent = `${contentLib.length} item${contentLib.length!==1?'s':''}`;
+  if (!contentLib.length) {
+    contentList.innerHTML = `<div style="text-align:center;color:var(--muted);padding:32px 16px;font-size:13px">Adicione conteúdo usando o formulário →</div>`;
+    return;
+  }
+  contentList.innerHTML = contentLib.map(item => `
+    <div class="content-item" data-id="${item.id}">
+      <span class="content-type-badge">${item.type}</span>
+      <div style="flex:1;min-width:0">
+        <div class="content-label">${escHtml(item.label)}</div>
+        ${item.url ? `<div class="content-url">${escHtml(item.url)}</div>` : ''}
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="sendLibItem('${item.id}')">Enviar</button>
+      <button class="content-del" onclick="deleteContent('${item.id}')" title="Remover">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+      </button>
+    </div>`).join('');
+}
+
+// Controla campos visíveis conforme tipo
+newType.addEventListener('change', () => {
+  const t = newType.value;
+  document.getElementById('urlField').style.display  = ['url','youtube','slides','video'].includes(t) ? '' : 'none';
+  document.getElementById('htmlField').style.display = t === 'html' ? '' : 'none';
+  const cdF = document.getElementById('countdownFields');
+  cdF.style.display = t === 'countdown' ? 'flex' : 'none';
+  if (t === 'countdown') cdF.style.flexDirection = 'column';
+});
+
+addContentBtn.addEventListener('click', async () => {
+  const t = newType.value;
+  const label = newLabel.value.trim();
+  if (!label) { showToast('Nome obrigatório', 'error'); return; }
+
+  const body = { label, type: t };
+  if (['url','youtube','slides','video'].includes(t)) body.url = newUrl.value;
+  if (t === 'html') body.html = newHtml.value;
+  if (t === 'countdown') body.countdown = {
+    title: document.getElementById('cdTitle').value || 'Iniciando em',
+    subtitle: document.getElementById('cdSubtitle').value,
+    durationMinutes: parseInt(document.getElementById('cdMinutes').value) || 5
+  };
+
+  try {
+    const r = await fetch('/api/content', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-flex-token': token },
+      body: JSON.stringify(body)
+    });
+    const item = await r.json();
+    contentLib.unshift(item);
+    renderContentList();
+    newLabel.value = '';
+    newUrl.value = '';
+    newHtml.value = '';
+    showToast('Conteúdo adicionado!');
+  } catch { showToast('Erro ao salvar', 'error'); }
+});
+
+async function deleteContent(id) {
+  try {
+    await fetch(`/api/content/${id}`, { method: 'DELETE', headers: { 'x-flex-token': token } });
+    contentLib = contentLib.filter(c => c.id !== id);
+    renderContentList();
+    showToast('Removido');
+  } catch { showToast('Erro ao remover', 'error'); }
+}
+
+function sendLibItem(id) {
+  const item = contentLib.find(c => c.id === id);
+  if (!item) return;
+  const targets = selectedTvIds.size > 0 ? [...selectedTvIds] : 'all';
+  const content = { type: item.type, url: item.url, html: item.html, label: item.label, ...(item.countdown || {}) };
+  socket.emit('command', { tvIds: targets, payload: { action: 'show', content } });
+  const count = typeof targets === 'string' ? 'todas as TVs' : `${targets.length} TV${targets.length>1?'s':''}`;
+  showToast(`Enviado para ${count}!`);
+}
+
+// ── Ao Vivo ───────────────────────────────────────────────────────────────────
+startLiveBtn.addEventListener('click', () => {
+  const url = hlsUrl.value.trim();
+  if (!url) { showToast('Cole a URL HLS do Mediamtx', 'error'); return; }
+  socket.emit('command', { tvIds: 'all', payload: { action: 'show', content: { type: 'video', url, label: 'AO VIVO', loop: false } } });
+  isStreaming = true;
+  liveDot.classList.add('streaming');
+  liveStatusLabel.textContent = 'Transmissão ativa — todas as TVs';
+  startLiveBtn.disabled = true;
+  stopLiveBtn.disabled = false;
+  showToast('Transmissão ao vivo iniciada!');
+});
+
+stopLiveBtn.addEventListener('click', () => {
+  socket.emit('command', { tvIds: 'all', payload: { action: 'hide' } });
+  isStreaming = false;
+  liveDot.classList.remove('streaming');
+  liveStatusLabel.textContent = 'Sem transmissão ativa';
+  startLiveBtn.disabled = false;
+  stopLiveBtn.disabled = true;
+  showToast('Transmissão encerrada');
+});
+
+// ── Utils ─────────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
