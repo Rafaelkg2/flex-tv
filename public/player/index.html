@@ -181,6 +181,24 @@
     color: var(--text);
   }
 
+  /* ── Fullscreen button ───────────────────────────────────────────────── */
+  #fullscreen-btn {
+    position: absolute;
+    bottom: 12vh; left: 50%; transform: translateX(-50%);
+    background: var(--flex-blue); color: #fff;
+    border: none; border-radius: 14px;
+    padding: 18px 40px;
+    font-size: clamp(16px, 2.5vw, 22px); font-weight: 700;
+    cursor: pointer; letter-spacing: 0.04em;
+    z-index: 20; white-space: nowrap;
+    animation: pulse-btn 2s ease-in-out infinite;
+  }
+  #fullscreen-btn:hover { filter: brightness(1.15); }
+  @keyframes pulse-btn {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(59,130,246,.4); }
+    50%       { box-shadow: 0 0 0 14px rgba(59,130,246,.0); }
+  }
+
   /* ── Live badge ───────────────────────────────────────────────────────── */
   .live-badge {
     position: fixed;
@@ -228,6 +246,8 @@
     <span id="statusText">Conectando…</span>
   </div>
 
+  <button id="fullscreen-btn" style="display:none">⛶ Toque para tela cheia</button>
+
   <div class="standby-clock" id="standbyClock">00:00</div>
 </div>
 
@@ -240,6 +260,36 @@
 <div class="live-badge" id="liveBadge">AO VIVO</div>
 
 <script>
+// ── Fullscreen ────────────────────────────────────────────────────────────────
+
+const fullscreenBtn = document.getElementById('fullscreen-btn');
+
+function tryFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (req) {
+    req.call(el, { navigationUI: 'hide' }).catch(() => {
+      fullscreenBtn.style.display = 'block';
+    });
+  } else {
+    fullscreenBtn.style.display = 'block';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', tryFullscreen);
+
+fullscreenBtn.addEventListener('click', () => {
+  tryFullscreen();
+  fullscreenBtn.style.display = 'none';
+});
+
+document.addEventListener('fullscreenchange', () => {
+  fullscreenBtn.style.display = document.fullscreenElement ? 'none' : 'block';
+});
+document.addEventListener('webkitfullscreenchange', () => {
+  fullscreenBtn.style.display = document.webkitFullscreenElement ? 'none' : 'block';
+});
+
 // ── Config ────────────────────────────────────────────────────────────────────
 
 // O tvId é persistido no localStorage para que a mesma TV reconecte com o mesmo ID

@@ -4,183 +4,287 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Flex TV — Painel de Controle</title>
+<!-- Anti-flash: aplica tema antes da renderização -->
+<script>(function(){var t=localStorage.getItem('flextv_theme')||'light';document.documentElement.setAttribute('data-theme',t)})();</script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ── Tema Claro (padrão) — tokens idênticos ao relatorio.html ─────────── */
 :root {
-  --bg:        #0A0A0A;
-  --surface:   #141414;
-  --surface2:  #1C1C1C;
-  --border:    #2A2A2A;
-  --blue:      #60A5FA;
-  --blue-dark: #3B82F6;
-  --green:     #22C55E;
-  --red:       #EF4444;
-  --gold:      #EAB308;
-  --orange:    #FB923C;
-  --text:      #FAFAFA;
-  --muted:     #71717A;
-  --muted2:    #3F3F46;
-  --radius:    10px;
-  --radius-sm: 6px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,.25);
-  --shadow-md: 0 8px 22px rgba(0,0,0,.38);
-  --font:      -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --bg:       #F5F5F5;
+  --surface:  #FFFFFF;
+  --surface2: #FAFAFA;
+  --bd:       #E4E4E7;
+  --bd-lt:    #F4F4F5;
+  --t1:       #18181B;
+  --t2:       #71717A;
+  --t3:       #A1A1AA;
+  --green:    #16A34A;
+  --grn-sub:  #F0FDF4;
+  --yellow:   #D97706;
+  --yel-sub:  #FFFBEB;
+  --red:      #DC2626;
+  --red-sub:  #FEF2F2;
+  --blue:     #2563EB;
+  --blue-sub: #DBEAFE;
+  --orange:   #F97316;
+  --r:        10px;
+  --rs:       6px;
+  --shadow:   0 1px 3px rgba(0,0,0,.08);
+  --shadow-md:0 8px 22px rgba(0,0,0,.12);
+  --font:     -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
-html, body {
+/* ── Tema Escuro ───────────────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg:       #0A0A0A;
+  --surface:  #141414;
+  --surface2: #1C1C1C;
+  --bd:       #2A2A2A;
+  --bd-lt:    #1A1A1A;
+  --t1:       #FAFAFA;
+  --t2:       #A1A1AA;
+  --t3:       #71717A;
+  --green:    #22C55E;
+  --grn-sub:  rgba(34,197,94,.12);
+  --yellow:   #EAB308;
+  --yel-sub:  rgba(234,179,8,.12);
+  --red:      #EF4444;
+  --red-sub:  rgba(239,68,68,.10);
+  --blue:     #60A5FA;
+  --blue-sub: rgba(96,165,250,.12);
+  --shadow:   0 1px 3px rgba(0,0,0,.25);
+  --shadow-md:0 8px 22px rgba(0,0,0,.38);
+}
+
+html {
+  height: 100%;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+html::-webkit-scrollbar { display: none; }
+
+body {
   height: 100%;
   background: var(--bg);
-  color: var(--text);
+  color: var(--t1);
   font-family: var(--font);
   font-size: 14px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  transition: background .2s, color .2s;
 }
+body::-webkit-scrollbar { display: none; }
 
-/* ── Layout ─────────────────────────────────────────────────────────────── */
+/* ── Layout ──────────────────────────────────────────────────────────── */
 .app { display: flex; flex-direction: column; height: 100%; }
 
+/* ── Topbar — SEMPRE ESCURA (logo branca funciona em ambos os temas) ─── */
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 24px;
+  padding: 12px 24px;
   background: #000;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid #2A2A2A;
   flex-shrink: 0;
 }
 .topbar-brand { display: flex; align-items: center; gap: 14px; }
-.topbar-logo { height: 32px; width: auto; display: block; }
-.topbar-divider { width: 1px; height: 28px; background: var(--border); }
-.topbar-title { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.topbar-title span { color: var(--blue); }
+.topbar-logo  { height: 30px; width: auto; display: block; }
+.topbar-divider { width: 1px; height: 26px; background: #2A2A2A; }
+.topbar-title {
+  font-size: 11px; font-weight: 700; letter-spacing: .12em;
+  text-transform: uppercase; color: rgba(255,255,255,.38);
+}
+.topbar-title span { color: #60A5FA; }
 
-.conn-status { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); }
-.conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted2); }
-.conn-dot.ok { background: var(--green); }
-.conn-dot.err { background: var(--red); animation: blink .8s ease-in-out infinite; }
-@keyframes blink { 0%,100%{opacity:.4} 50%{opacity:1} }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.conn-status  { display: flex; align-items: center; gap: 7px; font-size: 12px; color: rgba(255,255,255,.4); }
+.conn-dot     { width: 7px; height: 7px; border-radius: 50%; background: #3F3F46; }
+.conn-dot.ok  { background: #22C55E; }
+.conn-dot.err { background: #EF4444; animation: blink .8s ease-in-out infinite; }
+@keyframes blink { 0%,100%{opacity:.35} 50%{opacity:1} }
 
 .bridge-badge {
   display: flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 600; letter-spacing: .04em;
-  padding: 3px 8px; border-radius: 6px;
-  background: rgba(220,38,38,.15); color: #f87171;
-  border: 1px solid rgba(220,38,38,.2);
-  transition: all .3s;
+  font-size: 11px; font-weight: 700; letter-spacing: .04em;
+  padding: 3px 9px; border-radius: 20px;
+  background: rgba(220,38,38,.2); color: #f87171;
+  border: 1px solid rgba(220,38,38,.25);
+  transition: all .3s; white-space: nowrap;
 }
-.bridge-badge.ok { background: rgba(22,163,74,.15); color: #4ade80; border-color: rgba(22,163,74,.2); }
+.bridge-badge.ok { background: rgba(34,197,94,.15); color: #4ade80; border-color: rgba(34,197,94,.22); }
 .bridge-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
-/* ── Tabs ────────────────────────────────────────────────────────────────── */
-.tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
-.tab-btn {
-  flex: 1; padding: 14px 8px;
+.theme-toggle {
   background: none; border: none; cursor: pointer;
-  color: var(--muted); font-size: 13px; font-weight: 500;
-  letter-spacing: .03em; text-transform: uppercase;
+  font-size: 16px; padding: 4px 7px; border-radius: var(--rs);
+  color: rgba(255,255,255,.55); line-height: 1;
+  transition: color .15s, background .15s;
+}
+.theme-toggle:hover { background: rgba(255,255,255,.1); color: #fff; }
+
+/* ── Banner bridge offline ───────────────────────────────────────────── */
+.bridge-banner {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 20px;
+  background: var(--yel-sub); border-bottom: 1px solid rgba(217,119,6,.25);
+  font-size: 12px; color: var(--yellow); flex-shrink: 0;
+  transition: all .3s;
+}
+.bridge-banner.hidden { display: none; }
+.bridge-banner code {
+  font-family: monospace; font-size: 11px; font-weight: 700;
+  background: rgba(217,119,6,.15); padding: 1px 6px; border-radius: 4px;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex; border-bottom: 1px solid var(--bd);
+  flex-shrink: 0; background: var(--surface);
+  transition: background .2s, border-color .2s;
+}
+.tab-btn {
+  flex: 1; padding: 13px 8px;
+  background: none; border: none; cursor: pointer;
+  color: var(--t3); font-family: var(--font);
+  font-size: 11px; font-weight: 700;
+  letter-spacing: .08em; text-transform: uppercase;
   border-bottom: 2px solid transparent;
   transition: all .2s;
   display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 .tab-btn.active { color: var(--blue); border-color: var(--blue); }
-.tab-btn svg { width: 16px; height: 16px; }
+.tab-btn svg { width: 15px; height: 15px; }
 
-.tab-panel { display: none; flex: 1; overflow-y: auto; }
+.tab-panel { display: none; flex: 1; overflow-y: auto; background: var(--bg); transition: background .2s; }
 .tab-panel.active { display: flex; flex-direction: column; }
 
-/* ── Botões ──────────────────────────────────────────────────────────────── */
+/* ── Botões ──────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 9px 18px; border-radius: 8px; border: none; cursor: pointer;
-  font-size: 13px; font-weight: 600; letter-spacing: .02em;
-  transition: all .15s; white-space: nowrap;
+  padding: 9px 18px; border-radius: var(--r);
+  border: 1px solid transparent; cursor: pointer;
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  letter-spacing: .03em; transition: all .15s; white-space: nowrap;
 }
 .btn-primary { background: var(--blue); color: #fff; }
-.btn-primary:hover { background: var(--blue-dark); }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
 .btn-danger  { background: var(--red); color: #fff; }
-.btn-danger:hover { background: #b91c1c; }
-.btn-ghost   { background: rgba(255,255,255,.06); color: var(--text); }
-.btn-ghost:hover { background: rgba(255,255,255,.1); }
+.btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-ghost   { background: transparent; color: var(--t1); border-color: var(--bd); }
+.btn-ghost:hover:not(:disabled) { background: var(--bd-lt); }
 .btn-green   { background: var(--green); color: #fff; }
-.btn-green:hover { background: #15803d; }
-.btn-orange  { background: var(--gold); color: #fff; }
-.btn-orange:hover { background: #b45309; }
-.btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
-.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn-green:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-orange  { background: var(--yellow); color: #fff; }
+.btn-orange:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-sm { padding: 5px 11px; font-size: 11px; border-radius: var(--rs); }
+.btn:disabled { opacity: .35; cursor: not-allowed; }
 
-/* ── Forms ───────────────────────────────────────────────────────────────── */
+/* Tooltip em botões desabilitados */
+.btn[data-tooltip] { position: relative; }
+.btn[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute; bottom: calc(100% + 7px); left: 50%;
+  transform: translateX(-50%);
+  background: var(--t1); color: var(--bg);
+  font-size: 10px; font-weight: 600; line-height: 1.4;
+  padding: 5px 10px; border-radius: var(--rs);
+  white-space: normal; text-align: center; max-width: 200px;
+  pointer-events: none; z-index: 500;
+  box-shadow: var(--shadow-md);
+}
+
+/* ── Forms ───────────────────────────────────────────────────────────── */
 .field { display: flex; flex-direction: column; gap: 6px; }
-.field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+.field label {
+  font-size: 10px; font-weight: 600; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .07em;
+}
 .field input, .field select, .field textarea {
-  background: var(--surface2); border: 1px solid var(--border);
-  border-radius: 8px; padding: 10px 12px; color: var(--text);
+  background: var(--surface2); border: 1px solid var(--bd);
+  border-radius: var(--rs); padding: 9px 12px; color: var(--t1);
   font-family: var(--font); font-size: 13px;
-  outline: none; transition: border-color .15s;
+  outline: none; transition: border-color .15s, background .2s;
 }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
 .field select option { background: var(--surface2); }
 .field textarea { resize: vertical; min-height: 80px; }
 
-/* ── Login ───────────────────────────────────────────────────────────────── */
+/* ── Login — SEMPRE ESCURO (logo branca precisa de fundo escuro) ─────── */
 #login-screen {
   position: fixed; inset: 0; z-index: 200;
   background: var(--bg);
   display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
 }
 .login-card {
-  background: var(--surface); border: 1px solid var(--border);
+  background: #141414; border: 1px solid #2A2A2A;
   border-radius: 20px; padding: 40px; width: 100%; max-width: 380px;
   display: flex; flex-direction: column; gap: 24px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.3);
 }
 .login-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.login-logo svg { width: 56px; height: 56px; }
-.login-logo h1 { font-size: 22px; font-weight: 800; }
-.login-logo p  { font-size: 13px; color: var(--muted); }
-.login-error { font-size: 12px; color: var(--red); display: none; }
+.login-logo h1 { font-size: 20px; font-weight: 800; color: #FAFAFA; }
+.login-logo p  { font-size: 12px; color: #71717A; }
+.login-error   { font-size: 12px; color: #f87171; display: none; }
 .login-error.visible { display: block; }
+.login-card .field label { color: #71717A; }
+.login-card .field input { background: #1C1C1C; border-color: #2A2A2A; color: #FAFAFA; }
+.login-card .field input:focus { border-color: #60A5FA; }
+.login-card .btn-primary { background: #2563EB; }
 
-/* ── Aba TVs ─────────────────────────────────────────────────────────────── */
+/* ── Panel header ────────────────────────────────────────────────────── */
 .panel-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 16px 20px; flex-shrink: 0;
+  border-bottom: 1px solid var(--bd);
 }
-.panel-header h2 { font-size: 15px; font-weight: 700; }
-.panel-subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+.panel-header h2 {
+  font-size: 11px; font-weight: 700; color: var(--t1);
+  text-transform: uppercase; letter-spacing: .1em;
+}
+.panel-subtitle { font-size: 11px; color: var(--t3); margin-top: 3px; font-weight: 500; }
 
+/* ── TV Grid ─────────────────────────────────────────────────────────── */
 .tvs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  padding: 0 16px 16px;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px; padding: 16px;
 }
 
 .tv-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 18px;
+  background: var(--surface); border: 1px solid var(--bd);
+  border-radius: var(--r); padding: 18px;
   display: flex; flex-direction: column; gap: 12px;
-  box-shadow: var(--shadow-sm);
-  transition: border-color .2s, box-shadow .2s, transform .15s;
+  box-shadow: var(--shadow);
+  transition: border-color .2s, box-shadow .2s, transform .15s, background .2s;
   cursor: pointer;
 }
 .tv-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-.tv-card.selected { border-color: var(--blue); background: rgba(96,165,250,.05); }
+.tv-card.selected { border-color: var(--blue); }
+
 .tv-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.tv-card-name { font-weight: 800; font-size: 14px; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; line-height: 1.3; }
-.tv-icon { font-size: 16px; flex-shrink: 0; }
+.tv-card-name {
+  font-weight: 800; font-size: 14px; letter-spacing: -.01em; color: var(--t1);
+  display: flex; align-items: center; gap: 8px; line-height: 1.3;
+}
+.tv-icon { font-size: 15px; flex-shrink: 0; }
+
 .tv-badge {
-  font-size: 10px; font-weight: 700; padding: 3px 9px;
-  border-radius: 999px; text-transform: uppercase; letter-spacing: .07em;
+  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  border-radius: 20px; text-transform: uppercase; letter-spacing: .07em;
   white-space: nowrap; flex-shrink: 0;
 }
-.tv-badge.online   { background: rgba(34,197,94,.12);  color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
-.tv-badge.offline  { background: rgba(239,68,68,.1);   color: #f87171; border: 1px solid rgba(239,68,68,.2); }
-.tv-badge.exibindo { background: rgba(96,165,250,.12); color: #93c5fd; border: 1px solid rgba(96,165,250,.2); }
-.tv-content-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+.tv-badge.online   { background: var(--grn-sub); color: var(--green); }
+.tv-badge.offline  { background: var(--red-sub);  color: var(--red); }
+.tv-badge.exibindo { background: var(--blue-sub); color: var(--blue); }
 
-/* Animação reveal */
+.tv-content-label { font-size: 11px; color: var(--t3); font-weight: 500; }
+.tv-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* Reveal — igual ao relatorio.html */
 @keyframes reveal-up {
   from { opacity: 0; transform: translateY(16px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -195,126 +299,163 @@ html, body {
 .tv-card:nth-child(7) { animation-delay: .27s; }
 .tv-card:nth-child(8) { animation-delay: .31s; }
 
-.tv-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-
+/* Onboarding (nenhuma TV conectada) */
 .no-tvs {
   grid-column: 1/-1;
   display: flex; flex-direction: column; align-items: center;
-  padding: 48px 20px; gap: 12px; color: var(--muted);
-  text-align: center;
+  padding: 36px 20px; gap: 16px; color: var(--t3); text-align: center;
 }
-.no-tvs svg { width: 48px; height: 48px; opacity: .3; }
-.no-tvs p { font-size: 14px; }
+.no-tvs svg { width: 40px; height: 40px; opacity: .25; }
+.onboarding-card {
+  background: var(--surface); border: 1px solid var(--bd);
+  border-radius: var(--r); padding: 20px 24px; text-align: left;
+  max-width: 380px; width: 100%;
+}
+.onboarding-card h3 {
+  font-size: 10px; font-weight: 700; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .1em; margin-bottom: 14px;
+}
+.onboarding-step {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 10px 0; border-bottom: 1px solid var(--bd-lt);
+  font-size: 13px; color: var(--t2);
+}
+.onboarding-step:last-child { border-bottom: none; padding-bottom: 0; }
+.step-num {
+  width: 22px; height: 22px; border-radius: 50%; background: var(--blue);
+  color: #fff; font-size: 11px; font-weight: 800; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+}
+.onboarding-step strong { color: var(--t1); }
+.onboarding-url {
+  display: inline-block; margin-top: 5px;
+  background: var(--blue-sub); color: var(--blue);
+  padding: 2px 8px; border-radius: 4px;
+  font-size: 11px; font-family: monospace; font-weight: 700;
+}
 
-/* Barra de ação global (flutuante) */
+/* ── Global Action Bar ───────────────────────────────────────────────── */
 .global-action-bar {
-  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
-  padding: 12px 16px;
-  background: var(--surface); border-top: 1px solid var(--border);
-  flex-shrink: 0;
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 10px 16px;
+  background: var(--surface); border-top: 1px solid var(--bd);
+  flex-shrink: 0; transition: background .2s, border-color .2s;
 }
-.selection-info { font-size: 12px; color: var(--muted); flex: 1; }
+.selection-info { font-size: 11px; color: var(--t3); flex: 1; font-weight: 500; }
 
-/* ── Aba Conteúdo ────────────────────────────────────────────────────────── */
+/* ── Aba Conteúdo ────────────────────────────────────────────────────── */
 .content-layout {
   display: grid; grid-template-columns: 1fr;
   flex: 1; overflow: hidden;
 }
 @media (min-width: 700px) {
-  .content-layout { grid-template-columns: 1fr 320px; }
+  .content-layout { grid-template-columns: 1fr 300px; }
 }
 
-.content-list { overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.content-list {
+  overflow-y: auto; padding: 16px;
+  display: flex; flex-direction: column; gap: 8px;
+}
 
 .content-item {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 10px; padding: 12px 14px;
+  background: var(--surface); border: 1px solid var(--bd);
+  border-radius: var(--r); padding: 12px 14px;
   display: flex; align-items: center; gap: 12px; cursor: pointer;
-  transition: border-color .15s;
+  transition: border-color .15s, background .2s;
 }
 .content-item:hover, .content-item.active { border-color: var(--blue); }
 .content-type-badge {
-  background: var(--surface2); border-radius: 6px; padding: 4px 8px;
-  font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;
-  letter-spacing: .05em; white-space: nowrap;
+  background: var(--bd-lt); border: 1px solid var(--bd); border-radius: var(--rs);
+  padding: 3px 8px; font-size: 10px; font-weight: 700;
+  color: var(--t3); text-transform: uppercase; letter-spacing: .06em; white-space: nowrap;
 }
-.content-label { font-weight: 600; font-size: 13px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.content-url   { font-size: 11px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.content-del   { background: none; border: none; cursor: pointer; color: var(--muted2); padding: 4px; border-radius: 4px; flex-shrink: 0; }
+.content-label {
+  font-weight: 700; font-size: 13px; color: var(--t1);
+  flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.content-url { font-size: 11px; color: var(--t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.content-del { background: none; border: none; cursor: pointer; color: var(--t3); padding: 4px; border-radius: 4px; flex-shrink: 0; }
 .content-del:hover { color: var(--red); }
 
 .content-sidebar {
-  border-left: 1px solid var(--border);
-  overflow-y: auto; padding: 16px;
+  border-left: 1px solid var(--bd); overflow-y: auto; padding: 16px;
   display: flex; flex-direction: column; gap: 14px;
+  background: var(--surface); transition: background .2s, border-color .2s;
+}
+.add-form-section { display: flex; flex-direction: column; gap: 12px; }
+.add-form-section h3 {
+  font-size: 10px; font-weight: 700; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .1em;
 }
 
-.add-form-section {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 16px;
-  display: flex; flex-direction: column; gap: 12px;
-}
-.add-form-section h3 { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
-
-/* ── Aba Ao Vivo ─────────────────────────────────────────────────────────── */
+/* ── Aba Ao Vivo ─────────────────────────────────────────────────────── */
 .live-panel {
-  padding: 20px; display: flex; flex-direction: column; gap: 20px;
-  max-width: 560px; width: 100%;
+  padding: 20px; display: flex; flex-direction: column; gap: 16px;
+  max-width: 540px; width: 100%;
 }
-
 .live-status-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 20px;
+  background: var(--surface); border: 1px solid var(--bd);
+  border-radius: var(--r); padding: 20px;
   display: flex; flex-direction: column; gap: 12px;
+  box-shadow: var(--shadow); transition: background .2s;
 }
 .live-indicator {
   display: flex; align-items: center; gap: 10px;
-  font-size: 15px; font-weight: 700;
+  font-size: 14px; font-weight: 700; color: var(--t1);
 }
-.live-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--muted2); }
+.live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bd); }
 .live-dot.streaming { background: var(--red); animation: blink .8s ease-in-out infinite; }
 
 .hls-note {
-  font-size: 12px; color: var(--muted);
-  background: rgba(59,130,246,.08); border: 1px solid rgba(59,130,246,.2);
-  border-radius: 8px; padding: 10px 12px; line-height: 1.6;
+  font-size: 12px; color: var(--t2); line-height: 1.7;
+  background: var(--blue-sub); border: 1px solid rgba(37,99,235,.15);
+  border-radius: var(--rs); padding: 12px 14px;
 }
+[data-theme="dark"] .hls-note { border-color: rgba(96,165,250,.2); }
 .hls-note strong { color: var(--blue); }
+.hls-note code {
+  background: rgba(0,0,0,.07); padding: 1px 5px; border-radius: 3px;
+  font-size: 11px; font-family: monospace;
+}
+[data-theme="dark"] .hls-note code { background: rgba(255,255,255,.1); }
 
-/* ── Modal ───────────────────────────────────────────────────────────────── */
+/* ── Modal ───────────────────────────────────────────────────────────── */
 .modal-overlay {
   position: fixed; inset: 0; z-index: 300;
-  background: rgba(0,0,0,.7); backdrop-filter: blur(4px);
-  display: flex; align-items: flex-end; justify-content: center;
-  padding: 0;
+  background: rgba(0,0,0,.45); backdrop-filter: blur(4px);
+  display: flex; align-items: flex-end; justify-content: center; padding: 0;
 }
-@media (min-width: 560px) {
-  .modal-overlay { align-items: center; padding: 20px; }
-}
+@media (min-width: 560px) { .modal-overlay { align-items: center; padding: 20px; } }
 .modal-overlay.hidden { display: none; }
 
 .modal {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-width: 480px;
+  background: var(--surface); border: 1px solid var(--bd);
+  border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-width: 460px;
   display: flex; flex-direction: column; gap: 16px;
+  box-shadow: 0 -4px 24px rgba(0,0,0,.12); transition: background .2s;
 }
-@media (min-width: 560px) { .modal { border-radius: 20px; } }
+@media (min-width: 560px) { .modal { border-radius: 20px; box-shadow: var(--shadow-md); } }
 
 .modal-head { display: flex; align-items: center; justify-content: space-between; }
-.modal-head h2 { font-size: 16px; font-weight: 700; }
-.modal-close { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 22px; line-height: 1; }
-
-/* ── Toast ───────────────────────────────────────────────────────────────── */
-.toast {
-  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(80px);
-  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-  padding: 10px 20px; font-size: 13px; font-weight: 600;
-  transition: transform .3s ease;
-  z-index: 400; white-space: nowrap; box-shadow: 0 8px 32px rgba(0,0,0,.4);
+.modal-head h2 { font-size: 15px; font-weight: 800; color: var(--t1); }
+.modal-close {
+  background: none; border: none; color: var(--t3); cursor: pointer;
+  font-size: 22px; line-height: 1; transition: color .15s;
 }
-.toast.visible { transform: translateX(-50%) translateY(0); }
-.toast.success { border-color: var(--green); color: #4ade80; }
-.toast.error   { border-color: var(--red);   color: #f87171; }
+.modal-close:hover { color: var(--t1); }
+
+/* ── Toast ───────────────────────────────────────────────────────────── */
+.toast {
+  position: fixed; bottom: 20px; left: 50%;
+  transform: translateX(-50%) translateY(80px);
+  background: var(--t1); color: var(--bg); border-radius: 10px;
+  padding: 10px 20px; font-size: 12px; font-weight: 700;
+  transition: transform .3s ease; z-index: 400;
+  white-space: nowrap; box-shadow: 0 4px 16px rgba(0,0,0,.2);
+}
+.toast.visible   { transform: translateX(-50%) translateY(0); }
+.toast.success   { background: var(--green); color: #fff; }
+.toast.error     { background: var(--red);   color: #fff; }
 </style>
 </head>
 <body>
@@ -323,7 +464,7 @@ html, body {
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <img src="/assets/logo-white.png" alt="Grupo Flex" style="height:44px;width:auto;margin-bottom:4px">
+      <img src="/assets/logo-white.png" alt="Grupo Flex" style="height:44px;width:auto">
       <h1>TV Control</h1>
       <p>Painel de Controle</p>
     </div>
@@ -346,14 +487,22 @@ html, body {
       <div class="topbar-divider"></div>
       <div class="topbar-title"><span>TV</span> Control</div>
     </div>
-    <div class="conn-status">
+    <div class="topbar-right">
       <div class="bridge-badge" id="bridgeBadge">
         <span class="bridge-badge-dot"></span>
         <span id="bridgeLabel">Bridge offline</span>
       </div>
-      <div class="conn-dot" id="connDot"></div>
-      <span id="connLabel">Conectando…</span>
+      <button class="theme-toggle" id="themeToggle" title="Alternar tema">🌙</button>
+      <div class="conn-status">
+        <div class="conn-dot" id="connDot"></div>
+        <span id="connLabel">Conectando…</span>
+      </div>
     </div>
+  </div>
+
+  <!-- Banner: bridge offline -->
+  <div id="bridgeBanner" class="bridge-banner hidden">
+    ⚠ Controle de energia desativado — rode <code>node bridge/agent.js</code> no PC da rede para ligar/desligar TVs
   </div>
 
   <!-- Tabs -->
@@ -381,7 +530,7 @@ html, body {
       </div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
         <button class="btn btn-ghost btn-sm" id="importTvsBtn" title="Importar resultado do bridge/discover.js">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           Importar TVs
         </button>
         <button class="btn btn-ghost btn-sm" id="selectAllBtn">Selecionar todas</button>
@@ -391,7 +540,7 @@ html, body {
     <div class="tvs-grid" id="tvsGrid">
       <div class="no-tvs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 2l-4 5-4-5"/></svg>
-        <p>Nenhuma TV conectada ainda.<br>Abra <strong>/player</strong> no browser de cada TV.</p>
+        <p style="font-size:13px">Nenhuma TV conectada</p>
       </div>
     </div>
     <div class="global-action-bar">
@@ -399,7 +548,7 @@ html, body {
       <button class="btn btn-green btn-sm" id="wakeAllBtn">⚡ Ligar todas</button>
       <button class="btn btn-orange btn-sm" id="powerOffAllBtn">⏻ Desligar todas</button>
       <button class="btn btn-primary btn-sm" id="sendToSelectedBtn" disabled>
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         Enviar conteúdo
       </button>
       <button class="btn btn-ghost btn-sm" id="hideSelectedBtn" disabled>
@@ -419,8 +568,8 @@ html, body {
           </div>
         </div>
         <div class="content-list" id="contentList">
-          <div style="text-align:center;color:var(--muted);padding:32px 16px;font-size:13px">
-            Adicione conteúdo usando o formulário ao lado →
+          <div style="text-align:center;color:var(--t3);padding:32px 16px;font-size:13px">
+            Adicione conteúdo usando o formulário →
           </div>
         </div>
       </div>
@@ -450,8 +599,7 @@ html, body {
             <label>Texto ou HTML</label>
             <textarea id="newHtml" placeholder="Reunião em 10 minutos!&#10;Sala de Reuniões A"></textarea>
           </div>
-          <!-- Campos countdown -->
-          <div id="countdownFields" style="display:none;display:flex;flex-direction:column;gap:10px">
+          <div id="countdownFields" style="display:none;flex-direction:column;gap:10px">
             <div class="field">
               <label>Título</label>
               <input type="text" id="cdTitle" placeholder="Iniciando em">
@@ -483,18 +631,14 @@ html, body {
         </div>
         <div class="field">
           <label>URL HLS do Mediamtx</label>
-          <input type="url" id="hlsUrl"
-            placeholder="http://192.168.1.x:8888/live/main/index.m3u8"
-            value="">
+          <input type="url" id="hlsUrl" placeholder="http://192.168.1.x:8888/live/main/index.m3u8" value="">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-danger" id="startLiveBtn">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
             Iniciar transmissão ao vivo
           </button>
-          <button class="btn btn-ghost" id="stopLiveBtn" disabled>
-            Encerrar
-          </button>
+          <button class="btn btn-ghost" id="stopLiveBtn" disabled>Encerrar</button>
         </div>
       </div>
 
@@ -503,22 +647,19 @@ html, body {
         1. Baixe o <strong>Mediamtx</strong> e execute <code>mediamtx.exe</code> no laptop.<br>
         2. No OBS, configure: <em>Custom RTMP → rtmp://localhost:1935/live/main</em>.<br>
         3. Cole a URL HLS acima (substitua o IP pelo do seu laptop).<br>
-        4. Clique em <strong>Iniciar transmissão ao vivo</strong>.<br>
-        <br>
-        Consulte <strong>mediamtx/README.md</strong> para o guia completo.
+        4. Clique em <strong>Iniciar transmissão ao vivo</strong>.
       </div>
 
-      <div class="hls-note" style="border-color:rgba(217,119,6,.3);background:rgba(217,119,6,.06)">
-        <strong style="color:var(--gold)">Nota técnica:</strong> As TVs recebem a URL HLS e tocam o stream
-        com a tag <code>&lt;video&gt;</code> nativa. Nenhum software é necessário nas TVs.
-        A URL HLS deve ser acessível pela rede interna da Grupo Flex
+      <div class="hls-note" style="border-color:rgba(217,119,6,.25);background:var(--yel-sub)">
+        <strong style="color:var(--yellow)">Nota técnica:</strong> As TVs recebem a URL HLS e tocam o stream
+        com a tag <code>&lt;video&gt;</code> nativa. A URL HLS deve ser acessível pela rede interna
         (mesmo Wi-Fi que as TVs e o laptop do operador).
       </div>
     </div>
   </div>
 </div>
 
-<!-- Modal: selecionar conteúdo para enviar -->
+<!-- Modal: enviar conteúdo -->
 <div class="modal-overlay hidden" id="sendModal">
   <div class="modal">
     <div class="modal-head">
@@ -545,7 +686,7 @@ html, body {
       <label>Texto ou HTML</label>
       <textarea id="modalHtml" placeholder="Reunião em 10 minutos!"></textarea>
     </div>
-    <div id="modalCdFields" style="display:none;display:flex;flex-direction:column;gap:10px">
+    <div id="modalCdFields" style="display:none;flex-direction:column;gap:10px">
       <div class="field"><label>Título</label><input type="text" id="modalCdTitle" placeholder="Iniciando em"></div>
       <div class="field"><label>Subtítulo</label><input type="text" id="modalCdSub" placeholder="Aguarde…"></div>
       <div class="field"><label>Duração (minutos)</label><input type="number" id="modalCdMin" value="5" min="1"></div>
@@ -553,14 +694,14 @@ html, body {
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost" id="sendModalCancelBtn">Cancelar</button>
       <button class="btn btn-primary" id="sendModalConfirmBtn">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         Enviar agora
       </button>
     </div>
   </div>
 </div>
 
-<!-- Modal: configurar MAC/IP da TV -->
+<!-- Modal: configurar TV -->
 <div class="modal-overlay hidden" id="configModal">
   <div class="modal">
     <div class="modal-head">
@@ -574,12 +715,12 @@ html, body {
     <div class="field">
       <label>MAC Address</label>
       <input type="text" id="cfgMac" placeholder="AA:BB:CC:DD:EE:FF" maxlength="17">
-      <span style="font-size:11px;color:var(--muted)">TV → Configurações → Geral → Rede → Status da rede</span>
+      <span style="font-size:11px;color:var(--t3)">TV → Configurações → Geral → Rede → Status da rede</span>
     </div>
     <div class="field">
       <label>Endereço IP</label>
-      <input type="text" id="cfgIp" placeholder="192.168.1.x">
-      <span style="font-size:11px;color:var(--muted)">Recomendado: configure IP fixo no roteador</span>
+      <input type="text" id="cfgIp" placeholder="10.15.1.x">
+      <span style="font-size:11px;color:var(--t3)">Recomendado: configure IP fixo no roteador</span>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost" id="configModalCancelBtn">Cancelar</button>
@@ -599,6 +740,24 @@ let tvList = [];
 let contentLib = [];
 let selectedTvIds = new Set();
 let isStreaming = false;
+let bridgeConnected = false;
+
+// ── Tema ──────────────────────────────────────────────────────────────────────
+const themeToggle = document.getElementById('themeToggle');
+
+function applyTheme(t) {
+  document.documentElement.setAttribute('data-theme', t);
+  themeToggle.textContent = t === 'dark' ? '☀' : '🌙';
+  localStorage.setItem('flextv_theme', t);
+}
+
+// Aplica preferência salva (o anti-flash já setou o data-theme, aqui só sincroniza o botão)
+applyTheme(localStorage.getItem('flextv_theme') || 'light');
+
+themeToggle.addEventListener('click', () => {
+  const current = document.documentElement.getAttribute('data-theme') || 'light';
+  applyTheme(current === 'dark' ? 'light' : 'dark');
+});
 
 // ── UI refs ───────────────────────────────────────────────────────────────────
 const loginScreen = document.getElementById('login-screen');
@@ -625,25 +784,25 @@ const newUrl     = document.getElementById('newUrl');
 const newHtml    = document.getElementById('newHtml');
 const addContentBtn = document.getElementById('addContentBtn');
 
-const liveDot        = document.getElementById('liveDot');
-const liveStatusLabel= document.getElementById('liveStatusLabel');
-const hlsUrl         = document.getElementById('hlsUrl');
-const startLiveBtn   = document.getElementById('startLiveBtn');
-const stopLiveBtn    = document.getElementById('stopLiveBtn');
+const liveDot         = document.getElementById('liveDot');
+const liveStatusLabel = document.getElementById('liveStatusLabel');
+const hlsUrl          = document.getElementById('hlsUrl');
+const startLiveBtn    = document.getElementById('startLiveBtn');
+const stopLiveBtn     = document.getElementById('stopLiveBtn');
 
-const sendModal        = document.getElementById('sendModal');
-const sendModalClose   = document.getElementById('sendModalClose');
+const sendModal           = document.getElementById('sendModal');
+const sendModalClose      = document.getElementById('sendModalClose');
 const sendModalCancelBtn  = document.getElementById('sendModalCancelBtn');
 const sendModalConfirmBtn = document.getElementById('sendModalConfirmBtn');
-const modalType        = document.getElementById('modalType');
-const modalUrl         = document.getElementById('modalUrl');
-const modalHtml        = document.getElementById('modalHtml');
-const modalCdTitle     = document.getElementById('modalCdTitle');
-const modalCdSub       = document.getElementById('modalCdSub');
-const modalCdMin       = document.getElementById('modalCdMin');
-const modalUrlField    = document.getElementById('modalUrlField');
-const modalHtmlField   = document.getElementById('modalHtmlField');
-const modalCdFields    = document.getElementById('modalCdFields');
+const modalType     = document.getElementById('modalType');
+const modalUrl      = document.getElementById('modalUrl');
+const modalHtml     = document.getElementById('modalHtml');
+const modalCdTitle  = document.getElementById('modalCdTitle');
+const modalCdSub    = document.getElementById('modalCdSub');
+const modalCdMin    = document.getElementById('modalCdMin');
+const modalUrlField = document.getElementById('modalUrlField');
+const modalHtmlField= document.getElementById('modalHtmlField');
+const modalCdFields = document.getElementById('modalCdFields');
 
 const toast = document.getElementById('toast');
 
@@ -711,7 +870,7 @@ function connectSocket() {
     location.reload();
   });
   socket.on('bridge_status', ({ connected }) => updateBridgeStatus(connected));
-  socket.on('power_result', ({ tvId, action, success, error }) => {
+  socket.on('power_result', ({ action, success, error }) => {
     const label = action === 'wake' ? 'Ligar' : 'Desligar';
     if (success) showToast(`${label} executado com sucesso`);
     else showToast(`Erro ao ${label.toLowerCase()}: ${error || 'falha desconhecida'}`, 'error');
@@ -741,10 +900,28 @@ function renderTvGrid() {
   if (!tvList.length) {
     tvsGrid.innerHTML = `<div class="no-tvs">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 2l-4 5-4-5"/></svg>
-      <p>Nenhuma TV conectada ainda.<br>Abra <strong>/player</strong> no browser de cada TV.</p>
+      <p style="font-size:13px">Nenhuma TV conectada</p>
+      <div class="onboarding-card">
+        <h3>Como conectar uma TV</h3>
+        <div class="onboarding-step">
+          <div class="step-num">1</div>
+          <div><strong>Abra o browser</strong> da Samsung TV</div>
+        </div>
+        <div class="onboarding-step">
+          <div class="step-num">2</div>
+          <div><strong>Acesse a URL:</strong><br><span class="onboarding-url">flex-tv.onrender.com/player</span></div>
+        </div>
+        <div class="onboarding-step">
+          <div class="step-num">3</div>
+          <div>A TV <strong>aparece aqui automaticamente</strong></div>
+        </div>
+      </div>
     </div>`;
     return;
   }
+
+  const bridgeTip = !bridgeConnected ? 'Rode node bridge/agent.js no PC da rede para controle de energia' : '';
+  const offlineSendTip = 'Abra flex-tv.onrender.com/player no browser da TV';
 
   tvsGrid.innerHTML = tvList.map(tv => {
     const selected = selectedTvIds.has(tv.id);
@@ -754,27 +931,44 @@ function renderTvGrid() {
     const hasCfg = tv.config && (tv.config.mac || tv.config.ip);
     const isOffline = tv.status === 'offline';
     const isOn = !isOffline;
+
+    const wakeDisabled  = isOn || !bridgeConnected;
+    const offDisabled   = isOffline || !bridgeConnected;
+    const sendDisabled  = isOffline;
+
     return `<div class="tv-card ${selected ? 'selected' : ''}" data-id="${tv.id}">
       <div class="tv-card-head">
         <div class="tv-card-name">
           <span class="tv-icon">📺</span>${escHtml(tv.name)}
         </div>
         <div style="display:flex;align-items:center;gap:6px">
-          ${hasCfg ? '<span title="MAC/IP configurado" style="font-size:10px;color:var(--green)">●</span>' : '<span title="MAC/IP não configurado" style="font-size:10px;color:var(--muted2)">●</span>'}
+          ${hasCfg
+            ? '<span title="MAC/IP configurado" style="font-size:9px;color:var(--green)">●</span>'
+            : '<span title="MAC/IP não configurado — clique em ⚙" style="font-size:9px;color:var(--t3)">●</span>'}
           <span class="tv-badge ${statusClass}">${statusLabel}</span>
         </div>
       </div>
       <div class="tv-content-label">${escHtml(contentLabel)}</div>
       <div class="tv-actions">
-        <button class="btn btn-green btn-sm" onclick="powerTV('wake','${tv.id}')" ${isOn?'disabled':''} title="Ligar TV">⚡ Ligar</button>
-        <button class="btn btn-orange btn-sm" onclick="powerTV('power_off','${tv.id}')" ${isOffline?'disabled':''} title="Desligar TV">⏻ Desligar</button>
-        <button class="btn btn-primary btn-sm" onclick="openSendModal(['${tv.id}'])" ${isOffline?'disabled':''}>Enviar</button>
+        <button class="btn btn-green btn-sm"
+          onclick="powerTV('wake','${tv.id}')"
+          ${wakeDisabled ? 'disabled' : ''}
+          ${bridgeTip ? `data-tooltip="${bridgeTip}"` : ''}
+          title="Ligar TV">⚡ Ligar</button>
+        <button class="btn btn-orange btn-sm"
+          onclick="powerTV('power_off','${tv.id}')"
+          ${offDisabled ? 'disabled' : ''}
+          ${bridgeTip ? `data-tooltip="${bridgeTip}"` : ''}
+          title="Desligar TV">⏻ Desligar</button>
+        <button class="btn btn-primary btn-sm"
+          onclick="openSendModal(['${tv.id}'])"
+          ${sendDisabled ? 'disabled' : ''}
+          ${sendDisabled ? `data-tooltip="${offlineSendTip}"` : ''}>Enviar</button>
         <button class="btn btn-ghost btn-sm" onclick="openConfigModal('${tv.id}')" title="Configurar MAC/IP">⚙</button>
       </div>
     </div>`;
   }).join('');
 
-  // Re-bind click for selection
   tvsGrid.querySelectorAll('.tv-card').forEach(card => {
     card.addEventListener('click', e => {
       if (e.target.tagName === 'BUTTON') return;
@@ -814,11 +1008,6 @@ hideSelectedBtn.addEventListener('click', () => {
   showToast('Voltando ao standby…');
 });
 
-function hideTV(tvId) {
-  socket.emit('command', { tvIds: [tvId], payload: { action: 'hide' } });
-  showToast('TV voltando ao standby');
-}
-
 // ── Send modal ────────────────────────────────────────────────────────────────
 let modalTargetIds = [];
 
@@ -840,8 +1029,8 @@ function updateModalFields() {
   const t = modalType.value;
   modalUrlField.style.display  = ['url','youtube','slides','video'].includes(t) ? '' : 'none';
   modalHtmlField.style.display = t === 'html' ? '' : 'none';
-  modalCdFields.style.display  = t === 'countdown' ? 'flex' : 'none';
-  if (t === 'countdown') modalCdFields.style.flexDirection = 'column';
+  if (t === 'countdown') { modalCdFields.style.display = 'flex'; modalCdFields.style.flexDirection = 'column'; }
+  else modalCdFields.style.display = 'none';
 }
 updateModalFields();
 
@@ -869,7 +1058,7 @@ sendModalConfirmBtn.addEventListener('click', () => {
   showToast(`Conteúdo enviado para ${modalTargetIds.length} TV${modalTargetIds.length>1?'s':''}!`);
 });
 
-// ── Conteúdo Biblioteca ───────────────────────────────────────────────────────
+// ── Biblioteca ────────────────────────────────────────────────────────────────
 async function loadContentLib() {
   try {
     const r = await fetch('/api/content', { headers: { 'x-flex-token': token } });
@@ -881,7 +1070,7 @@ async function loadContentLib() {
 function renderContentList() {
   contentCountLabel.textContent = `${contentLib.length} item${contentLib.length!==1?'s':''}`;
   if (!contentLib.length) {
-    contentList.innerHTML = `<div style="text-align:center;color:var(--muted);padding:32px 16px;font-size:13px">Adicione conteúdo usando o formulário →</div>`;
+    contentList.innerHTML = `<div style="text-align:center;color:var(--t3);padding:32px 16px;font-size:13px">Adicione conteúdo usando o formulário →</div>`;
     return;
   }
   contentList.innerHTML = contentLib.map(item => `
@@ -898,14 +1087,13 @@ function renderContentList() {
     </div>`).join('');
 }
 
-// Controla campos visíveis conforme tipo
 newType.addEventListener('change', () => {
   const t = newType.value;
   document.getElementById('urlField').style.display  = ['url','youtube','slides','video'].includes(t) ? '' : 'none';
   document.getElementById('htmlField').style.display = t === 'html' ? '' : 'none';
   const cdF = document.getElementById('countdownFields');
-  cdF.style.display = t === 'countdown' ? 'flex' : 'none';
-  if (t === 'countdown') cdF.style.flexDirection = 'column';
+  if (t === 'countdown') { cdF.style.display = 'flex'; cdF.style.flexDirection = 'column'; }
+  else cdF.style.display = 'none';
 });
 
 addContentBtn.addEventListener('click', async () => {
@@ -931,9 +1119,7 @@ addContentBtn.addEventListener('click', async () => {
     const item = await r.json();
     contentLib.unshift(item);
     renderContentList();
-    newLabel.value = '';
-    newUrl.value = '';
-    newHtml.value = '';
+    newLabel.value = ''; newUrl.value = ''; newHtml.value = '';
     showToast('Conteúdo adicionado!');
   } catch { showToast('Erro ao salvar', 'error'); }
 });
@@ -980,27 +1166,33 @@ stopLiveBtn.addEventListener('click', () => {
   showToast('Transmissão encerrada');
 });
 
-// ── Bridge status ──────────────────────────────────────────────────────────────
-const bridgeBadge = document.getElementById('bridgeBadge');
-const bridgeLabel = document.getElementById('bridgeLabel');
+// ── Bridge status ─────────────────────────────────────────────────────────────
+const bridgeBadge  = document.getElementById('bridgeBadge');
+const bridgeLabel  = document.getElementById('bridgeLabel');
+const bridgeBanner = document.getElementById('bridgeBanner');
 
 function updateBridgeStatus(connected) {
+  bridgeConnected = connected;
   bridgeBadge.classList.toggle('ok', connected);
   bridgeLabel.textContent = connected ? 'Bridge online' : 'Bridge offline';
   bridgeBadge.title = connected
     ? 'Agente local conectado — pode ligar/desligar TVs'
     : 'Agente local offline — rode: node bridge/agent.js no PC da rede';
+  bridgeBanner.classList.toggle('hidden', connected);
+  renderTvGrid();
 }
 
-// ── Controle de energia ────────────────────────────────────────────────────────
+// ── Controle de energia ───────────────────────────────────────────────────────
 const wakeAllBtn     = document.getElementById('wakeAllBtn');
 const powerOffAllBtn = document.getElementById('powerOffAllBtn');
 
 wakeAllBtn.addEventListener('click', () => {
+  if (!bridgeConnected) { showToast('Bridge offline — rode node bridge/agent.js', 'error'); return; }
   socket.emit('power_command', { tvIds: 'all', action: 'wake' });
   showToast('Enviando sinal de ligar para todas as TVs…');
 });
 powerOffAllBtn.addEventListener('click', () => {
+  if (!bridgeConnected) { showToast('Bridge offline — rode node bridge/agent.js', 'error'); return; }
   socket.emit('power_command', { tvIds: 'all', action: 'power_off' });
   showToast('Enviando sinal de desligar para todas as TVs…');
 });
@@ -1010,11 +1202,11 @@ function powerTV(action, tvId) {
   showToast(action === 'wake' ? 'Ligando TV…' : 'Desligando TV…');
 }
 
-// ── Modal de configuração de TV ────────────────────────────────────────────────
-const configModal         = document.getElementById('configModal');
-const configModalClose    = document.getElementById('configModalClose');
-const configModalCancelBtn= document.getElementById('configModalCancelBtn');
-const configModalSaveBtn  = document.getElementById('configModalSaveBtn');
+// ── Modal configuração de TV ──────────────────────────────────────────────────
+const configModal          = document.getElementById('configModal');
+const configModalClose     = document.getElementById('configModalClose');
+const configModalCancelBtn = document.getElementById('configModalCancelBtn');
+const configModalSaveBtn   = document.getElementById('configModalSaveBtn');
 const cfgName = document.getElementById('cfgName');
 const cfgMac  = document.getElementById('cfgMac');
 const cfgIp   = document.getElementById('cfgIp');
@@ -1047,7 +1239,7 @@ configModalSaveBtn.addEventListener('click', async () => {
   } catch { showToast('Erro ao salvar configuração', 'error'); }
 });
 
-// ── Importar TVs (bridge/discover.js output) ──────────────────────────────────
+// ── Importar TVs ──────────────────────────────────────────────────────────────
 const importTvsBtn   = document.getElementById('importTvsBtn');
 const importTvsInput = document.getElementById('importTvsInput');
 
