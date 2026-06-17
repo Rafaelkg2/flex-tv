@@ -132,6 +132,25 @@ app.post('/api/power', requireAuth, (req, res) => {
   res.json({ sent: sent.length, missing });
 });
 
+// ── REST: Importar TVs em lote ─────────────────────────────────────────────────
+
+app.post('/api/import-tvs', requireAuth, (req, res) => {
+  const { tvs: list } = req.body || {};
+  if (!Array.isArray(list) || !list.length)
+    return res.status(400).json({ error: 'Array tvs obrigatório' });
+
+  let imported = 0;
+  list.forEach(({ name, mac, ip }) => {
+    if (!mac && !ip) return;
+    const tvId = `imported-${(mac || ip).replace(/[^a-z0-9]/gi, '').toLowerCase()}`;
+    tvConfig.set(tvId, { mac: mac || '', ip: ip || '', name: name || `TV ${ip || mac}` });
+    imported++;
+  });
+
+  broadcastTvList();
+  res.json({ ok: true, imported });
+});
+
 // ── REST: TVs ──────────────────────────────────────────────────────────────────
 
 app.get('/api/tvs', requireAuth, (_req, res) => {

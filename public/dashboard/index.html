@@ -9,20 +9,24 @@
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 :root {
-  --bg:        #0f1117;
-  --surface:   #1a1f2e;
-  --surface2:  #232a3b;
-  --border:    rgba(255,255,255,.08);
-  --blue:      #3B82F6;
-  --blue-dark: #1d4ed8;
-  --green:     #16A34A;
-  --red:       #DC2626;
-  --gold:      #D97706;
-  --text:      #F9FAFB;
-  --muted:     #9CA3AF;
-  --muted2:    #4B5563;
-  --radius:    12px;
-  --font:      'Inter', system-ui, -apple-system, sans-serif;
+  --bg:        #0A0A0A;
+  --surface:   #141414;
+  --surface2:  #1C1C1C;
+  --border:    #2A2A2A;
+  --blue:      #60A5FA;
+  --blue-dark: #3B82F6;
+  --green:     #22C55E;
+  --red:       #EF4444;
+  --gold:      #EAB308;
+  --orange:    #FB923C;
+  --text:      #FAFAFA;
+  --muted:     #71717A;
+  --muted2:    #3F3F46;
+  --radius:    10px;
+  --radius-sm: 6px;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.25);
+  --shadow-md: 0 8px 22px rgba(0,0,0,.38);
+  --font:      -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
 
 html, body {
@@ -40,14 +44,15 @@ html, body {
 
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 20px;
-  background: var(--surface);
+  padding: 14px 24px;
+  background: #000;
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
 }
-.topbar-brand { display: flex; align-items: center; gap: 10px; }
-.topbar-brand svg { width: 36px; height: 36px; }
-.topbar-title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.topbar-brand { display: flex; align-items: center; gap: 14px; }
+.topbar-logo { height: 32px; width: auto; display: block; }
+.topbar-divider { width: 1px; height: 28px; background: var(--border); }
+.topbar-title { font-size: 13px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .topbar-title span { color: var(--blue); }
 
 .conn-status { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); }
@@ -151,24 +156,44 @@ html, body {
 }
 
 .tv-card {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); padding: 16px;
-  display: flex; flex-direction: column; gap: 10px;
-  transition: border-color .2s;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex; flex-direction: column; gap: 12px;
+  box-shadow: var(--shadow-sm);
+  transition: border-color .2s, box-shadow .2s, transform .15s;
   cursor: pointer;
 }
-.tv-card.selected { border-color: var(--blue); background: rgba(59,130,246,.06); }
-.tv-card-head { display: flex; align-items: center; justify-content: space-between; }
-.tv-card-name { font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 8px; }
-.tv-icon { font-size: 18px; }
+.tv-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.tv-card.selected { border-color: var(--blue); background: rgba(96,165,250,.05); }
+.tv-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.tv-card-name { font-weight: 800; font-size: 14px; letter-spacing: -.01em; display: flex; align-items: center; gap: 8px; line-height: 1.3; }
+.tv-icon { font-size: 16px; flex-shrink: 0; }
 .tv-badge {
-  font-size: 10px; font-weight: 700; padding: 2px 8px;
-  border-radius: 99px; text-transform: uppercase; letter-spacing: .06em;
+  font-size: 10px; font-weight: 700; padding: 3px 9px;
+  border-radius: 999px; text-transform: uppercase; letter-spacing: .07em;
+  white-space: nowrap; flex-shrink: 0;
 }
-.tv-badge.online  { background: rgba(22,163,74,.2); color: #4ade80; }
-.tv-badge.offline { background: rgba(220,38,38,.15); color: #f87171; }
-.tv-badge.exibindo{ background: rgba(59,130,246,.2); color: #93c5fd; }
-.tv-content-label { font-size: 12px; color: var(--muted); }
+.tv-badge.online   { background: rgba(34,197,94,.12);  color: #4ade80; border: 1px solid rgba(34,197,94,.2); }
+.tv-badge.offline  { background: rgba(239,68,68,.1);   color: #f87171; border: 1px solid rgba(239,68,68,.2); }
+.tv-badge.exibindo { background: rgba(96,165,250,.12); color: #93c5fd; border: 1px solid rgba(96,165,250,.2); }
+.tv-content-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+
+/* Animação reveal */
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tv-card { animation: reveal-up .35s ease-out both; }
+.tv-card:nth-child(1) { animation-delay: .03s; }
+.tv-card:nth-child(2) { animation-delay: .07s; }
+.tv-card:nth-child(3) { animation-delay: .11s; }
+.tv-card:nth-child(4) { animation-delay: .15s; }
+.tv-card:nth-child(5) { animation-delay: .19s; }
+.tv-card:nth-child(6) { animation-delay: .23s; }
+.tv-card:nth-child(7) { animation-delay: .27s; }
+.tv-card:nth-child(8) { animation-delay: .31s; }
 
 .tv-actions { display: flex; gap: 6px; flex-wrap: wrap; }
 
@@ -298,11 +323,8 @@ html, body {
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <svg viewBox="0 0 56 56" fill="none">
-        <polygon points="28,3 51,16 51,40 28,53 5,40 5,16" fill="#1e3a5f" stroke="#3B82F6" stroke-width="1.5"/>
-        <text x="28" y="37" text-anchor="middle" font-family="system-ui" font-size="22" font-weight="900" fill="#3B82F6">G</text>
-      </svg>
-      <h1>Flex TV</h1>
+      <img src="/assets/logo-white.png" alt="Grupo Flex" style="height:44px;width:auto;margin-bottom:4px">
+      <h1>TV Control</h1>
       <p>Painel de Controle</p>
     </div>
     <div class="field">
@@ -320,13 +342,9 @@ html, body {
   <!-- Topbar -->
   <div class="topbar">
     <div class="topbar-brand">
-      <svg viewBox="0 0 36 36" fill="none">
-        <polygon points="18,2 33,10.5 33,25.5 18,34 3,25.5 3,10.5" fill="#1e3a5f" stroke="#3B82F6" stroke-width="1.2"/>
-        <text x="18" y="24" text-anchor="middle" font-family="system-ui" font-size="14" font-weight="900" fill="#3B82F6">G</text>
-      </svg>
-      <div>
-        <div class="topbar-title">Grupo <span>Flex</span> TV</div>
-      </div>
+      <img src="/assets/logo-white.png" alt="Grupo Flex" class="topbar-logo">
+      <div class="topbar-divider"></div>
+      <div class="topbar-title"><span>TV</span> Control</div>
     </div>
     <div class="conn-status">
       <div class="bridge-badge" id="bridgeBadge">
@@ -361,8 +379,15 @@ html, body {
         <h2>TVs Conectadas</h2>
         <div class="panel-subtitle" id="tvCountLabel">Carregando…</div>
       </div>
-      <button class="btn btn-ghost btn-sm" id="selectAllBtn">Selecionar todas</button>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" id="importTvsBtn" title="Importar resultado do bridge/discover.js">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          Importar TVs
+        </button>
+        <button class="btn btn-ghost btn-sm" id="selectAllBtn">Selecionar todas</button>
+      </div>
     </div>
+    <input type="file" id="importTvsInput" accept=".json" style="display:none">
     <div class="tvs-grid" id="tvsGrid">
       <div class="no-tvs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 2l-4 5-4-5"/></svg>
@@ -1020,6 +1045,33 @@ configModalSaveBtn.addEventListener('click', async () => {
     showToast('Configuração salva!');
     closeConfigModal();
   } catch { showToast('Erro ao salvar configuração', 'error'); }
+});
+
+// ── Importar TVs (bridge/discover.js output) ──────────────────────────────────
+const importTvsBtn   = document.getElementById('importTvsBtn');
+const importTvsInput = document.getElementById('importTvsInput');
+
+importTvsBtn.addEventListener('click', () => importTvsInput.click());
+
+importTvsInput.addEventListener('change', async () => {
+  const file = importTvsInput.files[0];
+  if (!file) return;
+  importTvsInput.value = '';
+  try {
+    const text = await file.text();
+    const list = JSON.parse(text);
+    if (!Array.isArray(list)) throw new Error('Formato inválido — esperado array JSON');
+    const r = await fetch('/api/import-tvs', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-flex-token': token },
+      body: JSON.stringify({ tvs: list })
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Erro no servidor');
+    showToast(`${data.imported} TV${data.imported !== 1 ? 's' : ''} importada${data.imported !== 1 ? 's' : ''}!`);
+  } catch(e) {
+    showToast('Erro ao importar: ' + e.message, 'error');
+  }
 });
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
