@@ -1,0 +1,17 @@
+{
+  "name": "flex-tv-bridge",
+  "version": "1.0.0",
+  "description": "Agente local de controle de energia das TVs — Grupo Flex",
+  "main": "agent.js",
+  "scripts": {
+    "start": "node agent.js"
+  },
+  "dependencies": {
+    "socket.io-client": "^4.7.2",
+    "wol": "^1.0.1",
+    "ws": "^8.16.0"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -50,11 +50,22 @@ html, body {
 .topbar-title { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
 .topbar-title span { color: var(--blue); }
 
-.conn-status { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); }
+.conn-status { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--muted); }
 .conn-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted2); }
 .conn-dot.ok { background: var(--green); }
 .conn-dot.err { background: var(--red); animation: blink .8s ease-in-out infinite; }
 @keyframes blink { 0%,100%{opacity:.4} 50%{opacity:1} }
+
+.bridge-badge {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; font-weight: 600; letter-spacing: .04em;
+  padding: 3px 8px; border-radius: 6px;
+  background: rgba(220,38,38,.15); color: #f87171;
+  border: 1px solid rgba(220,38,38,.2);
+  transition: all .3s;
+}
+.bridge-badge.ok { background: rgba(22,163,74,.15); color: #4ade80; border-color: rgba(22,163,74,.2); }
+.bridge-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 
 /* ── Tabs ────────────────────────────────────────────────────────────────── */
 .tabs { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
@@ -88,6 +99,8 @@ html, body {
 .btn-ghost:hover { background: rgba(255,255,255,.1); }
 .btn-green   { background: var(--green); color: #fff; }
 .btn-green:hover { background: #15803d; }
+.btn-orange  { background: var(--gold); color: #fff; }
+.btn-orange:hover { background: #b45309; }
 .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 6px; }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
 
@@ -316,6 +329,10 @@ html, body {
       </div>
     </div>
     <div class="conn-status">
+      <div class="bridge-badge" id="bridgeBadge">
+        <span class="bridge-badge-dot"></span>
+        <span id="bridgeLabel">Bridge offline</span>
+      </div>
       <div class="conn-dot" id="connDot"></div>
       <span id="connLabel">Conectando…</span>
     </div>
@@ -354,6 +371,8 @@ html, body {
     </div>
     <div class="global-action-bar">
       <div class="selection-info" id="selectionInfo">Nenhuma TV selecionada</div>
+      <button class="btn btn-green btn-sm" id="wakeAllBtn">⚡ Ligar todas</button>
+      <button class="btn btn-orange btn-sm" id="powerOffAllBtn">⏻ Desligar todas</button>
       <button class="btn btn-primary btn-sm" id="sendToSelectedBtn" disabled>
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         Enviar conteúdo
@@ -516,6 +535,34 @@ html, body {
   </div>
 </div>
 
+<!-- Modal: configurar MAC/IP da TV -->
+<div class="modal-overlay hidden" id="configModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Configurar TV</h2>
+      <button class="modal-close" id="configModalClose">×</button>
+    </div>
+    <div class="field">
+      <label>Nome da TV</label>
+      <input type="text" id="cfgName" placeholder="Ex: TV Recepção">
+    </div>
+    <div class="field">
+      <label>MAC Address</label>
+      <input type="text" id="cfgMac" placeholder="AA:BB:CC:DD:EE:FF" maxlength="17">
+      <span style="font-size:11px;color:var(--muted)">TV → Configurações → Geral → Rede → Status da rede</span>
+    </div>
+    <div class="field">
+      <label>Endereço IP</label>
+      <input type="text" id="cfgIp" placeholder="192.168.1.x">
+      <span style="font-size:11px;color:var(--muted)">Recomendado: configure IP fixo no roteador</span>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-ghost" id="configModalCancelBtn">Cancelar</button>
+      <button class="btn btn-primary" id="configModalSaveBtn">Salvar</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -638,6 +685,13 @@ function connectSocket() {
     token = '';
     location.reload();
   });
+  socket.on('bridge_status', ({ connected }) => updateBridgeStatus(connected));
+  socket.on('power_result', ({ tvId, action, success, error }) => {
+    const label = action === 'wake' ? 'Ligar' : 'Desligar';
+    if (success) showToast(`${label} executado com sucesso`);
+    else showToast(`Erro ao ${label.toLowerCase()}: ${error || 'falha desconhecida'}`, 'error');
+  });
+  socket.on('power_error', ({ message }) => showToast(message, 'error'));
   socket.on('tv_list', list => {
     tvList = list;
     renderTvGrid();
@@ -672,17 +726,25 @@ function renderTvGrid() {
     const statusClass = tv.status === 'offline' ? 'offline' : tv.status === 'exibindo' ? 'exibindo' : 'online';
     const statusLabel = tv.status === 'offline' ? 'Offline' : tv.status === 'exibindo' ? 'Exibindo' : 'Online';
     const contentLabel = tv.currentContent ? (tv.currentContent.label || tv.currentContent.type || '—') : 'Standby';
+    const hasCfg = tv.config && (tv.config.mac || tv.config.ip);
+    const isOffline = tv.status === 'offline';
+    const isOn = !isOffline;
     return `<div class="tv-card ${selected ? 'selected' : ''}" data-id="${tv.id}">
       <div class="tv-card-head">
         <div class="tv-card-name">
           <span class="tv-icon">📺</span>${escHtml(tv.name)}
         </div>
-        <span class="tv-badge ${statusClass}">${statusLabel}</span>
+        <div style="display:flex;align-items:center;gap:6px">
+          ${hasCfg ? '<span title="MAC/IP configurado" style="font-size:10px;color:var(--green)">●</span>' : '<span title="MAC/IP não configurado" style="font-size:10px;color:var(--muted2)">●</span>'}
+          <span class="tv-badge ${statusClass}">${statusLabel}</span>
+        </div>
       </div>
       <div class="tv-content-label">${escHtml(contentLabel)}</div>
       <div class="tv-actions">
-        <button class="btn btn-primary btn-sm" onclick="openSendModal(['${tv.id}'])" ${tv.status==='offline'?'disabled':''}>Enviar</button>
-        <button class="btn btn-ghost btn-sm" onclick="hideTV('${tv.id}')" ${tv.status!=='exibindo'?'disabled':''}>Standby</button>
+        <button class="btn btn-green btn-sm" onclick="powerTV('wake','${tv.id}')" ${isOn?'disabled':''} title="Ligar TV">⚡ Ligar</button>
+        <button class="btn btn-orange btn-sm" onclick="powerTV('power_off','${tv.id}')" ${isOffline?'disabled':''} title="Desligar TV">⏻ Desligar</button>
+        <button class="btn btn-primary btn-sm" onclick="openSendModal(['${tv.id}'])" ${isOffline?'disabled':''}>Enviar</button>
+        <button class="btn btn-ghost btn-sm" onclick="openConfigModal('${tv.id}')" title="Configurar MAC/IP">⚙</button>
       </div>
     </div>`;
   }).join('');
@@ -891,6 +953,73 @@ stopLiveBtn.addEventListener('click', () => {
   startLiveBtn.disabled = false;
   stopLiveBtn.disabled = true;
   showToast('Transmissão encerrada');
+});
+
+// ── Bridge status ──────────────────────────────────────────────────────────────
+const bridgeBadge = document.getElementById('bridgeBadge');
+const bridgeLabel = document.getElementById('bridgeLabel');
+
+function updateBridgeStatus(connected) {
+  bridgeBadge.classList.toggle('ok', connected);
+  bridgeLabel.textContent = connected ? 'Bridge online' : 'Bridge offline';
+  bridgeBadge.title = connected
+    ? 'Agente local conectado — pode ligar/desligar TVs'
+    : 'Agente local offline — rode: node bridge/agent.js no PC da rede';
+}
+
+// ── Controle de energia ────────────────────────────────────────────────────────
+const wakeAllBtn     = document.getElementById('wakeAllBtn');
+const powerOffAllBtn = document.getElementById('powerOffAllBtn');
+
+wakeAllBtn.addEventListener('click', () => {
+  socket.emit('power_command', { tvIds: 'all', action: 'wake' });
+  showToast('Enviando sinal de ligar para todas as TVs…');
+});
+powerOffAllBtn.addEventListener('click', () => {
+  socket.emit('power_command', { tvIds: 'all', action: 'power_off' });
+  showToast('Enviando sinal de desligar para todas as TVs…');
+});
+
+function powerTV(action, tvId) {
+  socket.emit('power_command', { tvIds: [tvId], action });
+  showToast(action === 'wake' ? 'Ligando TV…' : 'Desligando TV…');
+}
+
+// ── Modal de configuração de TV ────────────────────────────────────────────────
+const configModal         = document.getElementById('configModal');
+const configModalClose    = document.getElementById('configModalClose');
+const configModalCancelBtn= document.getElementById('configModalCancelBtn');
+const configModalSaveBtn  = document.getElementById('configModalSaveBtn');
+const cfgName = document.getElementById('cfgName');
+const cfgMac  = document.getElementById('cfgMac');
+const cfgIp   = document.getElementById('cfgIp');
+let configTargetTvId = null;
+
+function openConfigModal(tvId) {
+  configTargetTvId = tvId;
+  const tv = tvList.find(t => t.id === tvId);
+  cfgName.value = tv?.config?.name || tv?.name || '';
+  cfgMac.value  = tv?.config?.mac  || '';
+  cfgIp.value   = tv?.config?.ip   || '';
+  configModal.classList.remove('hidden');
+}
+
+function closeConfigModal() { configModal.classList.add('hidden'); configTargetTvId = null; }
+configModalClose.addEventListener('click', closeConfigModal);
+configModalCancelBtn.addEventListener('click', closeConfigModal);
+configModal.addEventListener('click', e => { if (e.target === configModal) closeConfigModal(); });
+
+configModalSaveBtn.addEventListener('click', async () => {
+  if (!configTargetTvId) return;
+  try {
+    await fetch('/api/tv-config', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-flex-token': token },
+      body: JSON.stringify({ tvId: configTargetTvId, mac: cfgMac.value.trim(), ip: cfgIp.value.trim(), name: cfgName.value.trim() })
+    });
+    showToast('Configuração salva!');
+    closeConfigModal();
+  } catch { showToast('Erro ao salvar configuração', 'error'); }
 });
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
