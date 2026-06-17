@@ -4,13 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>Flex TV — Painel de Controle</title>
-<!-- Anti-flash: aplica tema antes da renderização -->
 <script>(function(){var t=localStorage.getItem('flextv_theme')||'light';document.documentElement.setAttribute('data-theme',t)})();</script>
 <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 <style>
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* ── Tema Claro (padrão) — tokens idênticos ao relatorio.html ─────────── */
+/* ── Tokens idênticos ao relatorio.html ──────────────────────────────── */
 :root {
   --bg:       #F5F5F5;
   --surface:  #FFFFFF;
@@ -35,8 +34,6 @@
   --shadow-md:0 8px 22px rgba(0,0,0,.12);
   --font:     -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
 }
-
-/* ── Tema Escuro ───────────────────────────────────────────────────────── */
 [data-theme="dark"] {
   --bg:       #0A0A0A;
   --surface:  #141414;
@@ -58,44 +55,31 @@
   --shadow-md:0 8px 22px rgba(0,0,0,.38);
 }
 
-html {
-  height: 100%;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-}
-html::-webkit-scrollbar { display: none; }
+html, body { height: 100%; scrollbar-width: none; -ms-overflow-style: none; }
+html::-webkit-scrollbar, body::-webkit-scrollbar { display: none; }
 
 body {
-  height: 100%;
-  background: var(--bg);
-  color: var(--t1);
-  font-family: var(--font);
-  font-size: 14px;
-  line-height: 1.5;
+  background: var(--bg); color: var(--t1);
+  font-family: var(--font); font-size: 14px; line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
   transition: background .2s, color .2s;
 }
-body::-webkit-scrollbar { display: none; }
 
 /* ── Layout ──────────────────────────────────────────────────────────── */
 .app { display: flex; flex-direction: column; height: 100%; }
 
-/* ── Topbar — SEMPRE ESCURA (logo branca funciona em ambos os temas) ─── */
+/* ── Topbar — sempre escura ──────────────────────────────────────────── */
 .topbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 24px;
-  background: #000;
-  border-bottom: 1px solid #2A2A2A;
-  flex-shrink: 0;
+  padding: 12px 24px; background: #000;
+  border-bottom: 1px solid #2A2A2A; flex-shrink: 0;
 }
 .topbar-brand { display: flex; align-items: center; gap: 14px; }
-.topbar-logo  { height: 30px; width: auto; display: block; }
-.topbar-divider { width: 1px; height: 26px; background: #2A2A2A; }
+.topbar-logo  { height: 28px; width: auto; display: block; }
+.topbar-divider { width: 1px; height: 24px; background: #2A2A2A; }
 .topbar-title {
   font-size: 11px; font-weight: 700; letter-spacing: .12em;
-  text-transform: uppercase; color: rgba(255,255,255,.38);
+  text-transform: uppercase; color: rgba(255,255,255,.35);
 }
 .topbar-title span { color: #60A5FA; }
 
@@ -106,174 +90,108 @@ body::-webkit-scrollbar { display: none; }
 .conn-dot.err { background: #EF4444; animation: blink .8s ease-in-out infinite; }
 @keyframes blink { 0%,100%{opacity:.35} 50%{opacity:1} }
 
-.bridge-badge {
-  display: flex; align-items: center; gap: 5px;
-  font-size: 11px; font-weight: 700; letter-spacing: .04em;
-  padding: 3px 9px; border-radius: 20px;
-  background: rgba(220,38,38,.2); color: #f87171;
-  border: 1px solid rgba(220,38,38,.25);
-  transition: all .3s; white-space: nowrap;
-}
-.bridge-badge.ok { background: rgba(34,197,94,.15); color: #4ade80; border-color: rgba(34,197,94,.22); }
-.bridge-badge-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-
 .theme-toggle {
   background: none; border: none; cursor: pointer;
   font-size: 16px; padding: 4px 7px; border-radius: var(--rs);
-  color: rgba(255,255,255,.55); line-height: 1;
-  transition: color .15s, background .15s;
+  color: rgba(255,255,255,.55); line-height: 1; transition: all .15s;
 }
 .theme-toggle:hover { background: rgba(255,255,255,.1); color: #fff; }
 
-/* ── Banner bridge offline ───────────────────────────────────────────── */
-.bridge-banner {
-  display: flex; align-items: center; gap: 8px;
-  padding: 8px 20px;
-  background: var(--yel-sub); border-bottom: 1px solid rgba(217,119,6,.25);
-  font-size: 12px; color: var(--yellow); flex-shrink: 0;
-  transition: all .3s;
-}
-.bridge-banner.hidden { display: none; }
-.bridge-banner code {
-  font-family: monospace; font-size: 11px; font-weight: 700;
-  background: rgba(217,119,6,.15); padding: 1px 6px; border-radius: 4px;
-}
-
 /* ── Tabs ────────────────────────────────────────────────────────────── */
 .tabs {
-  display: flex; border-bottom: 1px solid var(--bd);
-  flex-shrink: 0; background: var(--surface);
-  transition: background .2s, border-color .2s;
+  display: flex; border-bottom: 1px solid var(--bd); flex-shrink: 0;
+  background: var(--surface); transition: background .2s, border-color .2s;
 }
 .tab-btn {
-  flex: 1; padding: 13px 8px;
-  background: none; border: none; cursor: pointer;
-  color: var(--t3); font-family: var(--font);
-  font-size: 11px; font-weight: 700;
+  flex: 1; padding: 13px 8px; background: none; border: none; cursor: pointer;
+  color: var(--t3); font-family: var(--font); font-size: 11px; font-weight: 700;
   letter-spacing: .08em; text-transform: uppercase;
-  border-bottom: 2px solid transparent;
-  transition: all .2s;
+  border-bottom: 2px solid transparent; transition: all .2s;
   display: flex; align-items: center; justify-content: center; gap: 6px;
 }
 .tab-btn.active { color: var(--blue); border-color: var(--blue); }
-.tab-btn svg { width: 15px; height: 15px; }
+.tab-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
 
 .tab-panel { display: none; flex: 1; overflow-y: auto; background: var(--bg); transition: background .2s; }
 .tab-panel.active { display: flex; flex-direction: column; }
 
-/* ── Botões ──────────────────────────────────────────────────────────── */
-.btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-  padding: 9px 18px; border-radius: var(--r);
-  border: 1px solid transparent; cursor: pointer;
-  font-family: var(--font); font-size: 12px; font-weight: 700;
-  letter-spacing: .03em; transition: all .15s; white-space: nowrap;
+/* ── KPI Strip ───────────────────────────────────────────────────────── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px; padding: 16px 16px 0;
 }
-.btn-primary { background: var(--blue); color: #fff; }
-.btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
-.btn-danger  { background: var(--red); color: #fff; }
-.btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
-.btn-ghost   { background: transparent; color: var(--t1); border-color: var(--bd); }
-.btn-ghost:hover:not(:disabled) { background: var(--bd-lt); }
-.btn-green   { background: var(--green); color: #fff; }
-.btn-green:hover:not(:disabled) { filter: brightness(1.08); }
-.btn-orange  { background: var(--yellow); color: #fff; }
-.btn-orange:hover:not(:disabled) { filter: brightness(1.08); }
-.btn-sm { padding: 5px 11px; font-size: 11px; border-radius: var(--rs); }
-.btn:disabled { opacity: .35; cursor: not-allowed; }
-
-/* Tooltip em botões desabilitados */
-.btn[data-tooltip] { position: relative; }
-.btn[data-tooltip]:hover::after {
-  content: attr(data-tooltip);
-  position: absolute; bottom: calc(100% + 7px); left: 50%;
-  transform: translateX(-50%);
-  background: var(--t1); color: var(--bg);
-  font-size: 10px; font-weight: 600; line-height: 1.4;
-  padding: 5px 10px; border-radius: var(--rs);
-  white-space: normal; text-align: center; max-width: 200px;
-  pointer-events: none; z-index: 500;
-  box-shadow: var(--shadow-md);
+@media (max-width: 640px) {
+  .kpi-strip { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ── Forms ───────────────────────────────────────────────────────────── */
-.field { display: flex; flex-direction: column; gap: 6px; }
-.field label {
-  font-size: 10px; font-weight: 600; color: var(--t3);
-  text-transform: uppercase; letter-spacing: .07em;
+.kpi-card {
+  background: var(--surface); border: 1px solid var(--bd);
+  border-radius: var(--r); padding: 16px 18px;
+  box-shadow: var(--shadow);
+  transition: background .2s, border-color .2s;
 }
-.field input, .field select, .field textarea {
-  background: var(--surface2); border: 1px solid var(--bd);
-  border-radius: var(--rs); padding: 9px 12px; color: var(--t1);
-  font-family: var(--font); font-size: 13px;
-  outline: none; transition: border-color .15s, background .2s;
+.kpi-value {
+  font-size: 30px; font-weight: 800;
+  letter-spacing: -.03em; line-height: 1;
 }
-.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
-.field select option { background: var(--surface2); }
-.field textarea { resize: vertical; min-height: 80px; }
+.kpi-label {
+  font-size: 10px; font-weight: 700; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .1em; margin-top: 8px;
+}
+.kpi-sub { font-size: 11px; color: var(--t3); margin-top: 3px; }
 
-/* ── Login — SEMPRE ESCURO (logo branca precisa de fundo escuro) ─────── */
-#login-screen {
-  position: fixed; inset: 0; z-index: 200;
-  background: var(--bg);
-  display: flex; align-items: center; justify-content: center;
-  transition: background .2s;
+.kpi-bridge-indicator {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 13px; font-weight: 700; line-height: 1;
 }
-.login-card {
-  background: #141414; border: 1px solid #2A2A2A;
-  border-radius: 20px; padding: 40px; width: 100%; max-width: 380px;
-  display: flex; flex-direction: column; gap: 24px;
-  box-shadow: 0 24px 64px rgba(0,0,0,.3);
-}
-.login-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
-.login-logo h1 { font-size: 20px; font-weight: 800; color: #FAFAFA; }
-.login-logo p  { font-size: 12px; color: #71717A; }
-.login-error   { font-size: 12px; color: #f87171; display: none; }
-.login-error.visible { display: block; }
-.login-card .field label { color: #71717A; }
-.login-card .field input { background: #1C1C1C; border-color: #2A2A2A; color: #FAFAFA; }
-.login-card .field input:focus { border-color: #60A5FA; }
-.login-card .btn-primary { background: #2563EB; }
-
-/* ── Panel header ────────────────────────────────────────────────────── */
-.panel-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 16px 20px; flex-shrink: 0;
-  border-bottom: 1px solid var(--bd);
-}
-.panel-header h2 {
-  font-size: 11px; font-weight: 700; color: var(--t1);
-  text-transform: uppercase; letter-spacing: .1em;
-}
-.panel-subtitle { font-size: 11px; color: var(--t3); margin-top: 3px; font-weight: 500; }
+.kpi-bridge-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
 
 /* ── TV Grid ─────────────────────────────────────────────────────────── */
 .tvs-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 12px; padding: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px; padding: 12px 16px 16px;
 }
 
 .tv-card {
   background: var(--surface); border: 1px solid var(--bd);
-  border-radius: var(--r); padding: 18px;
-  display: flex; flex-direction: column; gap: 12px;
-  box-shadow: var(--shadow);
-  transition: border-color .2s, box-shadow .2s, transform .15s, background .2s;
-  cursor: pointer;
+  border-radius: var(--r); padding: 20px 22px;
+  display: flex; flex-direction: column; gap: 0;
+  box-shadow: var(--shadow); cursor: pointer;
+  transition: border-color .2s, box-shadow .15s, transform .15s, background .2s;
+  animation: reveal-up .35s ease-out both;
 }
 .tv-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
 .tv-card.selected { border-color: var(--blue); }
 
-.tv-card-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
-.tv-card-name {
-  font-weight: 800; font-size: 14px; letter-spacing: -.01em; color: var(--t1);
-  display: flex; align-items: center; gap: 8px; line-height: 1.3;
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.tv-card:nth-child(1){animation-delay:.03s}
+.tv-card:nth-child(2){animation-delay:.07s}
+.tv-card:nth-child(3){animation-delay:.11s}
+.tv-card:nth-child(4){animation-delay:.15s}
+.tv-card:nth-child(5){animation-delay:.19s}
+.tv-card:nth-child(6){animation-delay:.23s}
+.tv-card:nth-child(7){animation-delay:.27s}
+.tv-card:nth-child(8){animation-delay:.31s}
+
+.tv-card-head {
+  display: flex; align-items: flex-start;
+  justify-content: space-between; gap: 10px; margin-bottom: 12px;
+}
+.tv-name {
+  font-size: 16px; font-weight: 800; letter-spacing: -.01em;
+  color: var(--t1); display: flex; align-items: center; gap: 8px;
+  line-height: 1.2; min-width: 0; overflow: hidden;
 }
 .tv-icon { font-size: 15px; flex-shrink: 0; }
+.tv-name-text { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .tv-badge {
-  font-size: 10px; font-weight: 700; padding: 2px 8px;
+  font-size: 10px; font-weight: 700; padding: 3px 9px;
   border-radius: 20px; text-transform: uppercase; letter-spacing: .07em;
   white-space: nowrap; flex-shrink: 0;
 }
@@ -281,35 +199,32 @@ body::-webkit-scrollbar { display: none; }
 .tv-badge.offline  { background: var(--red-sub);  color: var(--red); }
 .tv-badge.exibindo { background: var(--blue-sub); color: var(--blue); }
 
-.tv-content-label { font-size: 11px; color: var(--t3); font-weight: 500; }
-.tv-actions { display: flex; gap: 6px; flex-wrap: wrap; }
-
-/* Reveal — igual ao relatorio.html */
-@keyframes reveal-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+.tv-content-info {
+  font-size: 13px; color: var(--t2); margin-bottom: 4px;
+  font-weight: 600; min-height: 18px;
 }
-.tv-card { animation: reveal-up .35s ease-out both; }
-.tv-card:nth-child(1) { animation-delay: .03s; }
-.tv-card:nth-child(2) { animation-delay: .07s; }
-.tv-card:nth-child(3) { animation-delay: .11s; }
-.tv-card:nth-child(4) { animation-delay: .15s; }
-.tv-card:nth-child(5) { animation-delay: .19s; }
-.tv-card:nth-child(6) { animation-delay: .23s; }
-.tv-card:nth-child(7) { animation-delay: .27s; }
-.tv-card:nth-child(8) { animation-delay: .31s; }
+.tv-content-url {
+  font-size: 11px; color: var(--t3);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  margin-bottom: 6px;
+}
+.tv-tech-info {
+  font-size: 11px; color: var(--t3); font-family: monospace;
+  margin-bottom: 14px; min-height: 16px;
+}
+.tv-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; }
 
-/* Onboarding (nenhuma TV conectada) */
+/* Onboarding */
 .no-tvs {
-  grid-column: 1/-1;
-  display: flex; flex-direction: column; align-items: center;
-  padding: 36px 20px; gap: 16px; color: var(--t3); text-align: center;
+  grid-column: 1/-1; display: flex; flex-direction: column;
+  align-items: center; padding: 40px 20px; gap: 16px;
+  color: var(--t3); text-align: center;
 }
-.no-tvs svg { width: 40px; height: 40px; opacity: .25; }
+.no-tvs svg { width: 38px; height: 38px; opacity: .2; }
 .onboarding-card {
   background: var(--surface); border: 1px solid var(--bd);
   border-radius: var(--r); padding: 20px 24px; text-align: left;
-  max-width: 380px; width: 100%;
+  max-width: 360px; width: 100%;
 }
 .onboarding-card h3 {
   font-size: 10px; font-weight: 700; color: var(--t3);
@@ -326,7 +241,6 @@ body::-webkit-scrollbar { display: none; }
   color: #fff; font-size: 11px; font-weight: 800; flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
 }
-.onboarding-step strong { color: var(--t1); }
 .onboarding-url {
   display: inline-block; margin-top: 5px;
   background: var(--blue-sub); color: var(--blue);
@@ -334,8 +248,8 @@ body::-webkit-scrollbar { display: none; }
   font-size: 11px; font-family: monospace; font-weight: 700;
 }
 
-/* ── Global Action Bar ───────────────────────────────────────────────── */
-.global-action-bar {
+/* ── Action Bar ──────────────────────────────────────────────────────── */
+.action-bar {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   padding: 10px 16px;
   background: var(--surface); border-top: 1px solid var(--bd);
@@ -343,27 +257,94 @@ body::-webkit-scrollbar { display: none; }
 }
 .selection-info { font-size: 11px; color: var(--t3); flex: 1; font-weight: 500; }
 
+/* ── Botões ──────────────────────────────────────────────────────────── */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 18px; border-radius: var(--r);
+  border: 1px solid transparent; cursor: pointer;
+  font-family: var(--font); font-size: 12px; font-weight: 700;
+  letter-spacing: .03em; transition: all .15s; white-space: nowrap;
+}
+.btn-primary { background: var(--blue); color: #fff; }
+.btn-primary:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-danger  { background: var(--red);    color: #fff; }
+.btn-danger:hover:not(:disabled) { filter: brightness(1.1); }
+.btn-ghost   { background: transparent; color: var(--t1); border-color: var(--bd); }
+.btn-ghost:hover:not(:disabled) { background: var(--bd-lt); }
+.btn-green   { background: var(--green); color: #fff; }
+.btn-green:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-orange  { background: var(--orange); color: #fff; }
+.btn-orange:hover:not(:disabled) { filter: brightness(1.08); }
+.btn-sm { padding: 6px 13px; font-size: 11px; border-radius: var(--rs); }
+.btn:disabled { opacity: .32; cursor: not-allowed; }
+
+/* ── Forms ───────────────────────────────────────────────────────────── */
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label {
+  font-size: 10px; font-weight: 600; color: var(--t3);
+  text-transform: uppercase; letter-spacing: .07em;
+}
+.field input, .field select, .field textarea {
+  background: var(--surface2); border: 1px solid var(--bd);
+  border-radius: var(--rs); padding: 9px 12px; color: var(--t1);
+  font-family: var(--font); font-size: 13px; outline: none;
+  transition: border-color .15s, background .2s;
+}
+.field input:focus, .field select:focus, .field textarea:focus { border-color: var(--blue); }
+.field select option { background: var(--surface2); }
+.field textarea { resize: vertical; min-height: 80px; }
+
+/* ── Login — sempre escuro ───────────────────────────────────────────── */
+#login-screen {
+  position: fixed; inset: 0; z-index: 200;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+  transition: background .2s;
+}
+.login-card {
+  background: #141414; border: 1px solid #2A2A2A;
+  border-radius: 20px; padding: 40px; width: 100%; max-width: 360px;
+  display: flex; flex-direction: column; gap: 22px;
+  box-shadow: 0 24px 64px rgba(0,0,0,.3);
+}
+.login-logo { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.login-logo h1 { font-size: 20px; font-weight: 800; color: #FAFAFA; }
+.login-logo p  { font-size: 12px; color: #71717A; }
+.login-error { font-size: 12px; color: #f87171; display: none; }
+.login-error.visible { display: block; }
+.login-card .field label { color: #71717A; }
+.login-card .field input { background: #1C1C1C; border-color: #2A2A2A; color: #FAFAFA; }
+.login-card .field input:focus { border-color: #60A5FA; }
+.login-card .btn-primary { background: #2563EB; }
+
 /* ── Aba Conteúdo ────────────────────────────────────────────────────── */
 .content-layout {
-  display: grid; grid-template-columns: 1fr;
-  flex: 1; overflow: hidden;
+  display: grid; grid-template-columns: 1fr; flex: 1; overflow: hidden;
 }
 @media (min-width: 700px) {
   .content-layout { grid-template-columns: 1fr 300px; }
 }
-
 .content-list {
   overflow-y: auto; padding: 16px;
   display: flex; flex-direction: column; gap: 8px;
 }
+.panel-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 20px; flex-shrink: 0; border-bottom: 1px solid var(--bd);
+}
+.panel-header h2 {
+  font-size: 11px; font-weight: 700; color: var(--t1);
+  text-transform: uppercase; letter-spacing: .1em;
+}
+.panel-subtitle { font-size: 11px; color: var(--t3); margin-top: 3px; }
 
 .content-item {
   background: var(--surface); border: 1px solid var(--bd);
   border-radius: var(--r); padding: 12px 14px;
-  display: flex; align-items: center; gap: 12px; cursor: pointer;
+  display: flex; align-items: center; gap: 12px;
   transition: border-color .15s, background .2s;
 }
-.content-item:hover, .content-item.active { border-color: var(--blue); }
+.content-item:hover { border-color: var(--blue); }
 .content-type-badge {
   background: var(--bd-lt); border: 1px solid var(--bd); border-radius: var(--rs);
   padding: 3px 8px; font-size: 10px; font-weight: 700;
@@ -374,7 +355,10 @@ body::-webkit-scrollbar { display: none; }
   flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
 .content-url { font-size: 11px; color: var(--t3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.content-del { background: none; border: none; cursor: pointer; color: var(--t3); padding: 4px; border-radius: 4px; flex-shrink: 0; }
+.content-del {
+  background: none; border: none; cursor: pointer; color: var(--t3);
+  padding: 4px; border-radius: 4px; flex-shrink: 0;
+}
 .content-del:hover { color: var(--red); }
 
 .content-sidebar {
@@ -399,10 +383,7 @@ body::-webkit-scrollbar { display: none; }
   display: flex; flex-direction: column; gap: 12px;
   box-shadow: var(--shadow); transition: background .2s;
 }
-.live-indicator {
-  display: flex; align-items: center; gap: 10px;
-  font-size: 14px; font-weight: 700; color: var(--t1);
-}
+.live-indicator { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 700; color: var(--t1); }
 .live-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--bd); }
 .live-dot.streaming { background: var(--red); animation: blink .8s ease-in-out infinite; }
 
@@ -427,7 +408,6 @@ body::-webkit-scrollbar { display: none; }
 }
 @media (min-width: 560px) { .modal-overlay { align-items: center; padding: 20px; } }
 .modal-overlay.hidden { display: none; }
-
 .modal {
   background: var(--surface); border: 1px solid var(--bd);
   border-radius: 20px 20px 0 0; padding: 24px; width: 100%; max-width: 460px;
@@ -435,7 +415,6 @@ body::-webkit-scrollbar { display: none; }
   box-shadow: 0 -4px 24px rgba(0,0,0,.12); transition: background .2s;
 }
 @media (min-width: 560px) { .modal { border-radius: 20px; box-shadow: var(--shadow-md); } }
-
 .modal-head { display: flex; align-items: center; justify-content: space-between; }
 .modal-head h2 { font-size: 15px; font-weight: 800; color: var(--t1); }
 .modal-close {
@@ -464,7 +443,7 @@ body::-webkit-scrollbar { display: none; }
 <div id="login-screen">
   <div class="login-card">
     <div class="login-logo">
-      <img src="/assets/logo-white.png" alt="Grupo Flex" style="height:44px;width:auto">
+      <img src="/assets/logo-white.png" alt="Grupo Flex" style="height:42px;width:auto">
       <h1>TV Control</h1>
       <p>Painel de Controle</p>
     </div>
@@ -488,21 +467,12 @@ body::-webkit-scrollbar { display: none; }
       <div class="topbar-title"><span>TV</span> Control</div>
     </div>
     <div class="topbar-right">
-      <div class="bridge-badge" id="bridgeBadge">
-        <span class="bridge-badge-dot"></span>
-        <span id="bridgeLabel">Bridge offline</span>
-      </div>
       <button class="theme-toggle" id="themeToggle" title="Alternar tema">🌙</button>
       <div class="conn-status">
         <div class="conn-dot" id="connDot"></div>
         <span id="connLabel">Conectando…</span>
       </div>
     </div>
-  </div>
-
-  <!-- Banner: bridge offline -->
-  <div id="bridgeBanner" class="bridge-banner hidden">
-    ⚠ Controle de energia desativado — rode <code>node bridge/agent.js</code> no PC da rede para ligar/desligar TVs
   </div>
 
   <!-- Tabs -->
@@ -523,38 +493,72 @@ body::-webkit-scrollbar { display: none; }
 
   <!-- Aba TVs -->
   <div class="tab-panel active" id="tab-tvs">
-    <div class="panel-header">
-      <div>
-        <h2>TVs Conectadas</h2>
-        <div class="panel-subtitle" id="tvCountLabel">Carregando…</div>
+
+    <!-- KPI Strip -->
+    <div class="kpi-strip" id="kpiStrip">
+      <div class="kpi-card">
+        <div class="kpi-value" id="kpiOnline" style="color:var(--green)">—</div>
+        <div class="kpi-label">Online</div>
+        <div class="kpi-sub" id="kpiOnlineSub">de 0 total</div>
       </div>
-      <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" id="importTvsBtn" title="Importar resultado do bridge/discover.js">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-          Importar TVs
-        </button>
-        <button class="btn btn-ghost btn-sm" id="selectAllBtn">Selecionar todas</button>
+      <div class="kpi-card">
+        <div class="kpi-value" id="kpiExibindo" style="color:var(--blue)">—</div>
+        <div class="kpi-label">Exibindo agora</div>
+        <div class="kpi-sub" id="kpiExibindoSub"> </div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-value" id="kpiOffline" style="color:var(--t3)">—</div>
+        <div class="kpi-label">Offline</div>
+        <div class="kpi-sub" id="kpiOfflineSub"> </div>
+      </div>
+      <div class="kpi-card" style="display:flex;flex-direction:column;justify-content:center">
+        <div class="kpi-bridge-indicator" id="kpiBridgeIndicator">
+          <div class="kpi-bridge-dot" style="background:var(--t3)"></div>
+          <span style="font-size:13px;font-weight:700;color:var(--t3)">Bridge</span>
+        </div>
+        <div class="kpi-label" style="margin-top:8px">Controle de energia</div>
+        <div class="kpi-sub" id="kpiBridgeSub">Offline — sem controle</div>
       </div>
     </div>
-    <input type="file" id="importTvsInput" accept=".json" style="display:none">
+
+    <!-- TV Grid -->
     <div class="tvs-grid" id="tvsGrid">
       <div class="no-tvs">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 2l-4 5-4-5"/></svg>
         <p style="font-size:13px">Nenhuma TV conectada</p>
+        <div class="onboarding-card">
+          <h3>Como conectar uma TV</h3>
+          <div class="onboarding-step">
+            <div class="step-num">1</div>
+            <div><strong>Abra o browser</strong> da Samsung TV</div>
+          </div>
+          <div class="onboarding-step">
+            <div class="step-num">2</div>
+            <div><strong>Acesse a URL:</strong><br><span class="onboarding-url">flex-tv.onrender.com/player</span></div>
+          </div>
+          <div class="onboarding-step">
+            <div class="step-num">3</div>
+            <div>A TV <strong>aparece aqui automaticamente</strong></div>
+          </div>
+        </div>
       </div>
     </div>
-    <div class="global-action-bar">
+
+    <!-- Action bar -->
+    <div class="action-bar">
       <div class="selection-info" id="selectionInfo">Nenhuma TV selecionada</div>
-      <button class="btn btn-green btn-sm" id="wakeAllBtn">⚡ Ligar todas</button>
-      <button class="btn btn-orange btn-sm" id="powerOffAllBtn">⏻ Desligar todas</button>
+      <button class="btn btn-ghost btn-sm" id="importTvsBtn">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Importar TVs
+      </button>
+      <button class="btn btn-ghost btn-sm" id="selectAllBtn">Selecionar todas</button>
       <button class="btn btn-primary btn-sm" id="sendToSelectedBtn" disabled>
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         Enviar conteúdo
       </button>
-      <button class="btn btn-ghost btn-sm" id="hideSelectedBtn" disabled>
-        Voltar standby
-      </button>
+      <button class="btn btn-ghost btn-sm" id="hideSelectedBtn" disabled>Voltar standby</button>
     </div>
+    <input type="file" id="importTvsInput" accept=".json" style="display:none">
   </div>
 
   <!-- Aba Conteúdo -->
@@ -597,7 +601,7 @@ body::-webkit-scrollbar { display: none; }
           </div>
           <div class="field" id="htmlField" style="display:none">
             <label>Texto ou HTML</label>
-            <textarea id="newHtml" placeholder="Reunião em 10 minutos!&#10;Sala de Reuniões A"></textarea>
+            <textarea id="newHtml" placeholder="Reunião em 10 minutos!&#10;Sala A"></textarea>
           </div>
           <div id="countdownFields" style="display:none;flex-direction:column;gap:10px">
             <div class="field">
@@ -631,29 +635,21 @@ body::-webkit-scrollbar { display: none; }
         </div>
         <div class="field">
           <label>URL HLS do Mediamtx</label>
-          <input type="url" id="hlsUrl" placeholder="http://192.168.1.x:8888/live/main/index.m3u8" value="">
+          <input type="url" id="hlsUrl" placeholder="http://192.168.1.x:8888/live/main/index.m3u8">
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-danger" id="startLiveBtn">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
             Iniciar transmissão ao vivo
           </button>
           <button class="btn btn-ghost" id="stopLiveBtn" disabled>Encerrar</button>
         </div>
       </div>
-
       <div class="hls-note">
         <strong>Como usar:</strong><br>
-        1. Baixe o <strong>Mediamtx</strong> e execute <code>mediamtx.exe</code> no laptop.<br>
-        2. No OBS, configure: <em>Custom RTMP → rtmp://localhost:1935/live/main</em>.<br>
-        3. Cole a URL HLS acima (substitua o IP pelo do seu laptop).<br>
-        4. Clique em <strong>Iniciar transmissão ao vivo</strong>.
-      </div>
-
-      <div class="hls-note" style="border-color:rgba(217,119,6,.25);background:var(--yel-sub)">
-        <strong style="color:var(--yellow)">Nota técnica:</strong> As TVs recebem a URL HLS e tocam o stream
-        com a tag <code>&lt;video&gt;</code> nativa. A URL HLS deve ser acessível pela rede interna
-        (mesmo Wi-Fi que as TVs e o laptop do operador).
+        1. Execute <code>mediamtx.exe</code> no laptop.<br>
+        2. No OBS: Custom RTMP → <code>rtmp://localhost:1935/live/main</code>.<br>
+        3. Cole a URL HLS acima e clique em <strong>Iniciar transmissão</strong>.
       </div>
     </div>
   </div>
@@ -689,12 +685,12 @@ body::-webkit-scrollbar { display: none; }
     <div id="modalCdFields" style="display:none;flex-direction:column;gap:10px">
       <div class="field"><label>Título</label><input type="text" id="modalCdTitle" placeholder="Iniciando em"></div>
       <div class="field"><label>Subtítulo</label><input type="text" id="modalCdSub" placeholder="Aguarde…"></div>
-      <div class="field"><label>Duração (minutos)</label><input type="number" id="modalCdMin" value="5" min="1"></div>
+      <div class="field"><label>Duração (min)</label><input type="number" id="modalCdMin" value="5" min="1"></div>
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button class="btn btn-ghost" id="sendModalCancelBtn">Cancelar</button>
       <button class="btn btn-primary" id="sendModalConfirmBtn">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
         Enviar agora
       </button>
     </div>
@@ -715,7 +711,7 @@ body::-webkit-scrollbar { display: none; }
     <div class="field">
       <label>MAC Address</label>
       <input type="text" id="cfgMac" placeholder="AA:BB:CC:DD:EE:FF" maxlength="17">
-      <span style="font-size:11px;color:var(--t3)">TV → Configurações → Geral → Rede → Status da rede</span>
+      <span style="font-size:11px;color:var(--t3)">Configurações → Geral → Rede → Status da rede</span>
     </div>
     <div class="field">
       <label>Endereço IP</label>
@@ -739,7 +735,6 @@ let socket = null;
 let tvList = [];
 let contentLib = [];
 let selectedTvIds = new Set();
-let isStreaming = false;
 let bridgeConnected = false;
 
 // ── Tema ──────────────────────────────────────────────────────────────────────
@@ -750,69 +745,20 @@ function applyTheme(t) {
   themeToggle.textContent = t === 'dark' ? '☀' : '🌙';
   localStorage.setItem('flextv_theme', t);
 }
-
-// Aplica preferência salva (o anti-flash já setou o data-theme, aqui só sincroniza o botão)
 applyTheme(localStorage.getItem('flextv_theme') || 'light');
 
 themeToggle.addEventListener('click', () => {
-  const current = document.documentElement.getAttribute('data-theme') || 'light';
-  applyTheme(current === 'dark' ? 'light' : 'dark');
+  applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
 });
 
-// ── UI refs ───────────────────────────────────────────────────────────────────
-const loginScreen = document.getElementById('login-screen');
-const mainApp     = document.getElementById('mainApp');
-const loginInput  = document.getElementById('loginInput');
-const loginBtn    = document.getElementById('loginBtn');
-const loginError  = document.getElementById('loginError');
-
-const connDot   = document.getElementById('connDot');
-const connLabel = document.getElementById('connLabel');
-
-const tvsGrid       = document.getElementById('tvsGrid');
-const tvCountLabel  = document.getElementById('tvCountLabel');
-const selectionInfo = document.getElementById('selectionInfo');
-const selectAllBtn  = document.getElementById('selectAllBtn');
-const sendToSelectedBtn = document.getElementById('sendToSelectedBtn');
-const hideSelectedBtn   = document.getElementById('hideSelectedBtn');
-
-const contentList       = document.getElementById('contentList');
-const contentCountLabel = document.getElementById('contentCountLabel');
-const newType    = document.getElementById('newType');
-const newLabel   = document.getElementById('newLabel');
-const newUrl     = document.getElementById('newUrl');
-const newHtml    = document.getElementById('newHtml');
-const addContentBtn = document.getElementById('addContentBtn');
-
-const liveDot         = document.getElementById('liveDot');
-const liveStatusLabel = document.getElementById('liveStatusLabel');
-const hlsUrl          = document.getElementById('hlsUrl');
-const startLiveBtn    = document.getElementById('startLiveBtn');
-const stopLiveBtn     = document.getElementById('stopLiveBtn');
-
-const sendModal           = document.getElementById('sendModal');
-const sendModalClose      = document.getElementById('sendModalClose');
-const sendModalCancelBtn  = document.getElementById('sendModalCancelBtn');
-const sendModalConfirmBtn = document.getElementById('sendModalConfirmBtn');
-const modalType     = document.getElementById('modalType');
-const modalUrl      = document.getElementById('modalUrl');
-const modalHtml     = document.getElementById('modalHtml');
-const modalCdTitle  = document.getElementById('modalCdTitle');
-const modalCdSub    = document.getElementById('modalCdSub');
-const modalCdMin    = document.getElementById('modalCdMin');
-const modalUrlField = document.getElementById('modalUrlField');
-const modalHtmlField= document.getElementById('modalHtmlField');
-const modalCdFields = document.getElementById('modalCdFields');
-
-const toast = document.getElementById('toast');
-
 // ── Toast ─────────────────────────────────────────────────────────────────────
+const toast = document.getElementById('toast');
 let toastTimeout;
 function showToast(msg, type = 'success') {
   toast.textContent = msg;
   toast.className = `toast visible ${type}`;
   clearTimeout(toastTimeout);
-  toastTimeout = setTimeout(() => toast.classList.remove('visible'), 3000);
+  toastTimeout = setTimeout(() => toast.classList.remove('visible'), 3200);
 }
 
 // ── Tabs ──────────────────────────────────────────────────────────────────────
@@ -826,6 +772,12 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
 });
 
 // ── Login ─────────────────────────────────────────────────────────────────────
+const loginScreen = document.getElementById('login-screen');
+const mainApp     = document.getElementById('mainApp');
+const loginInput  = document.getElementById('loginInput');
+const loginBtn    = document.getElementById('loginBtn');
+const loginError  = document.getElementById('loginError');
+
 async function tryLogin(password) {
   loginBtn.disabled = true;
   loginError.classList.remove('visible');
@@ -846,219 +798,238 @@ async function tryLogin(password) {
     loginBtn.disabled = false;
   }
 }
-
 loginBtn.addEventListener('click', () => tryLogin(loginInput.value));
 loginInput.addEventListener('keydown', e => { if (e.key === 'Enter') tryLogin(loginInput.value); });
 
-// ── Socket.io ─────────────────────────────────────────────────────────────────
-function connectSocket() {
-  socket = io(window.location.origin, {
-    query: { role: 'dashboard', token }
-  });
+// ── Socket ────────────────────────────────────────────────────────────────────
+const connDot   = document.getElementById('connDot');
+const connLabel = document.getElementById('connLabel');
 
-  socket.on('connect', () => {
-    connDot.className = 'conn-dot ok';
-    connLabel.textContent = 'Conectado';
-  });
-  socket.on('disconnect', () => {
-    connDot.className = 'conn-dot err';
-    connLabel.textContent = 'Reconectando…';
-  });
-  socket.on('auth_error', () => {
-    sessionStorage.removeItem('flextv_token');
-    token = '';
-    location.reload();
-  });
+function connectSocket() {
+  socket = io(window.location.origin, { query: { role: 'dashboard', token } });
+  socket.on('connect', () => { connDot.className = 'conn-dot ok'; connLabel.textContent = 'Conectado'; });
+  socket.on('disconnect', () => { connDot.className = 'conn-dot err'; connLabel.textContent = 'Reconectando…'; });
+  socket.on('auth_error', () => { sessionStorage.removeItem('flextv_token'); token = ''; location.reload(); });
   socket.on('bridge_status', ({ connected }) => updateBridgeStatus(connected));
   socket.on('power_result', ({ action, success, error }) => {
     const label = action === 'wake' ? 'Ligar' : 'Desligar';
-    if (success) showToast(`${label} executado com sucesso`);
-    else showToast(`Erro ao ${label.toLowerCase()}: ${error || 'falha desconhecida'}`, 'error');
+    if (success) showToast(`${label} executado`);
+    else showToast(`Erro: ${error || 'falha desconhecida'}`, 'error');
   });
   socket.on('power_error', ({ message }) => showToast(message, 'error'));
-  socket.on('tv_list', list => {
-    tvList = list;
-    renderTvGrid();
-  });
+  socket.on('tv_list', list => { tvList = list; renderKpis(); renderTvGrid(); });
 }
 
-// ── Show app ──────────────────────────────────────────────────────────────────
 async function showApp() {
   loginScreen.style.display = 'none';
   mainApp.style.display = 'flex';
   connectSocket();
   await loadContentLib();
 }
-
 if (token) showApp();
 
-// ── TV Grid ───────────────────────────────────────────────────────────────────
-function renderTvGrid() {
-  const online = tvList.filter(t => t.status !== 'offline');
-  tvCountLabel.textContent = `${online.length} online · ${tvList.length} total`;
+// ── KPIs ──────────────────────────────────────────────────────────────────────
+function renderKpis() {
+  const total    = tvList.length;
+  const online   = tvList.filter(t => t.status !== 'offline').length;
+  const exibindo = tvList.filter(t => t.status === 'exibindo').length;
+  const offline  = total - online;
 
+  document.getElementById('kpiOnline').textContent = online;
+  document.getElementById('kpiOnline').style.color = online > 0 ? 'var(--green)' : 'var(--t3)';
+  document.getElementById('kpiOnlineSub').textContent = `de ${total} total`;
+
+  document.getElementById('kpiExibindo').textContent = exibindo;
+  document.getElementById('kpiExibindo').style.color = exibindo > 0 ? 'var(--blue)' : 'var(--t3)';
+  document.getElementById('kpiExibindoSub').textContent = exibindo > 0 ? `TV${exibindo > 1 ? 's' : ''} com conteúdo` : ' ';
+
+  document.getElementById('kpiOffline').textContent = offline;
+  document.getElementById('kpiOffline').style.color = offline > 0 ? 'var(--red)' : 'var(--t3)';
+  document.getElementById('kpiOfflineSub').textContent = offline > 0 ? 'verificar conexão' : ' ';
+
+  // KPI Bridge
+  const dot = document.querySelector('#kpiBridgeIndicator .kpi-bridge-dot');
+  const label = document.querySelector('#kpiBridgeIndicator span');
+  const sub   = document.getElementById('kpiBridgeSub');
+  if (bridgeConnected) {
+    dot.style.background = 'var(--green)';
+    label.style.color = 'var(--green)';
+    label.textContent = 'Conectado';
+    sub.textContent = 'Pode ligar e desligar';
+  } else {
+    dot.style.background = 'var(--t3)';
+    label.style.color = 'var(--t3)';
+    label.textContent = 'Offline';
+    sub.textContent = 'rode node bridge/agent.js';
+  }
+}
+
+// ── TV Grid ───────────────────────────────────────────────────────────────────
+const tvsGrid = document.getElementById('tvsGrid');
+
+function renderTvGrid() {
   if (!tvList.length) {
     tvsGrid.innerHTML = `<div class="no-tvs">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="7" width="20" height="13" rx="2"/><path d="M16 2l-4 5-4-5"/></svg>
       <p style="font-size:13px">Nenhuma TV conectada</p>
       <div class="onboarding-card">
         <h3>Como conectar uma TV</h3>
-        <div class="onboarding-step">
-          <div class="step-num">1</div>
-          <div><strong>Abra o browser</strong> da Samsung TV</div>
-        </div>
-        <div class="onboarding-step">
-          <div class="step-num">2</div>
-          <div><strong>Acesse a URL:</strong><br><span class="onboarding-url">flex-tv.onrender.com/player</span></div>
-        </div>
-        <div class="onboarding-step">
-          <div class="step-num">3</div>
-          <div>A TV <strong>aparece aqui automaticamente</strong></div>
-        </div>
+        <div class="onboarding-step"><div class="step-num">1</div><div><strong>Abra o browser</strong> da Samsung TV</div></div>
+        <div class="onboarding-step"><div class="step-num">2</div><div><strong>Acesse:</strong><br><span class="onboarding-url">flex-tv.onrender.com/player</span></div></div>
+        <div class="onboarding-step"><div class="step-num">3</div><div>A TV <strong>aparece aqui automaticamente</strong></div></div>
       </div>
     </div>`;
     return;
   }
 
-  const bridgeTip = !bridgeConnected ? 'Rode node bridge/agent.js no PC da rede para controle de energia' : '';
-  const offlineSendTip = 'Abra flex-tv.onrender.com/player no browser da TV';
-
   tvsGrid.innerHTML = tvList.map(tv => {
-    const selected = selectedTvIds.has(tv.id);
-    const statusClass = tv.status === 'offline' ? 'offline' : tv.status === 'exibindo' ? 'exibindo' : 'online';
-    const statusLabel = tv.status === 'offline' ? 'Offline' : tv.status === 'exibindo' ? 'Exibindo' : 'Online';
-    const contentLabel = tv.currentContent ? (tv.currentContent.label || tv.currentContent.type || '—') : 'Standby';
-    const hasCfg = tv.config && (tv.config.mac || tv.config.ip);
-    const isOffline = tv.status === 'offline';
-    const isOn = !isOffline;
+    const selected   = selectedTvIds.has(tv.id);
+    const isOffline  = tv.status === 'offline';
+    const statusCls  = isOffline ? 'offline' : tv.status === 'exibindo' ? 'exibindo' : 'online';
+    const statusLbl  = isOffline ? 'Offline' : tv.status === 'exibindo' ? 'Exibindo' : 'Online';
+    const cfg        = tv.config || {};
 
-    const wakeDisabled  = isOn || !bridgeConnected;
-    const offDisabled   = isOffline || !bridgeConnected;
-    const sendDisabled  = isOffline;
+    const contentInfo = tv.currentContent
+      ? escHtml(tv.currentContent.label || tv.currentContent.type || 'Exibindo')
+      : isOffline ? '—' : 'Standby';
+
+    const contentUrl = tv.currentContent?.url
+      ? `<div class="tv-content-url">${escHtml(tv.currentContent.url)}</div>`
+      : '';
+
+    const techInfo = (cfg.ip || cfg.mac || cfg.name)
+      ? `${cfg.ip ? cfg.ip : ''}${cfg.ip && (cfg.mac || cfg.name) ? ' · ' : ''}${cfg.name || cfg.mac || ''}`
+      : '';
+
+    // Botões de energia — só aparecem se bridge está conectado
+    const powerBtn = bridgeConnected
+      ? (isOffline
+          ? `<button class="btn btn-green btn-sm" onclick="event.stopPropagation();powerTV('wake','${tv.id}')">⚡ Ligar</button>`
+          : `<button class="btn btn-orange btn-sm" onclick="event.stopPropagation();powerTV('power_off','${tv.id}')">⏻ Desligar</button>`)
+      : '';
 
     return `<div class="tv-card ${selected ? 'selected' : ''}" data-id="${tv.id}">
       <div class="tv-card-head">
-        <div class="tv-card-name">
-          <span class="tv-icon">📺</span>${escHtml(tv.name)}
+        <div class="tv-name">
+          <span class="tv-icon">📺</span>
+          <span class="tv-name-text">${escHtml(tv.name)}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          ${hasCfg
-            ? '<span title="MAC/IP configurado" style="font-size:9px;color:var(--green)">●</span>'
-            : '<span title="MAC/IP não configurado — clique em ⚙" style="font-size:9px;color:var(--t3)">●</span>'}
-          <span class="tv-badge ${statusClass}">${statusLabel}</span>
-        </div>
+        <span class="tv-badge ${statusCls}">${statusLbl}</span>
       </div>
-      <div class="tv-content-label">${escHtml(contentLabel)}</div>
+      <div class="tv-content-info">${contentInfo}</div>
+      ${contentUrl}
+      <div class="tv-tech-info">${escHtml(techInfo)}</div>
       <div class="tv-actions">
-        <button class="btn btn-green btn-sm"
-          onclick="powerTV('wake','${tv.id}')"
-          ${wakeDisabled ? 'disabled' : ''}
-          ${bridgeTip ? `data-tooltip="${bridgeTip}"` : ''}
-          title="Ligar TV">⚡ Ligar</button>
-        <button class="btn btn-orange btn-sm"
-          onclick="powerTV('power_off','${tv.id}')"
-          ${offDisabled ? 'disabled' : ''}
-          ${bridgeTip ? `data-tooltip="${bridgeTip}"` : ''}
-          title="Desligar TV">⏻ Desligar</button>
+        ${powerBtn}
         <button class="btn btn-primary btn-sm"
-          onclick="openSendModal(['${tv.id}'])"
-          ${sendDisabled ? 'disabled' : ''}
-          ${sendDisabled ? `data-tooltip="${offlineSendTip}"` : ''}>Enviar</button>
-        <button class="btn btn-ghost btn-sm" onclick="openConfigModal('${tv.id}')" title="Configurar MAC/IP">⚙</button>
+          onclick="event.stopPropagation();openSendModal(['${tv.id}'])"
+          ${isOffline ? 'disabled' : ''}>Enviar</button>
+        <button class="btn btn-ghost btn-sm"
+          onclick="event.stopPropagation();openConfigModal('${tv.id}')" title="Configurar MAC/IP">⚙</button>
       </div>
     </div>`;
   }).join('');
 
   tvsGrid.querySelectorAll('.tv-card').forEach(card => {
-    card.addEventListener('click', e => {
-      if (e.target.tagName === 'BUTTON') return;
+    card.addEventListener('click', () => {
       const id = card.dataset.id;
       if (selectedTvIds.has(id)) selectedTvIds.delete(id);
       else selectedTvIds.add(id);
       updateSelectionUI();
-      renderTvGrid();
+      card.classList.toggle('selected', selectedTvIds.has(id));
     });
   });
 
   updateSelectionUI();
 }
 
-function updateSelectionUI() {
-  const count = selectedTvIds.size;
-  selectionInfo.textContent = count === 0 ? 'Nenhuma TV selecionada' : `${count} TV${count>1?'s':''} selecionada${count>1?'s':''}`;
-  sendToSelectedBtn.disabled = count === 0;
-  hideSelectedBtn.disabled = count === 0;
+function updateBridgeStatus(connected) {
+  bridgeConnected = connected;
+  renderKpis();
+  renderTvGrid();
 }
 
-selectAllBtn.addEventListener('click', () => {
+function updateSelectionUI() {
+  const count = selectedTvIds.size;
+  const selInfo = document.getElementById('selectionInfo');
+  selInfo.textContent = count === 0 ? 'Nenhuma TV selecionada' : `${count} TV${count > 1 ? 's' : ''} selecionada${count > 1 ? 's' : ''}`;
+  document.getElementById('sendToSelectedBtn').disabled = count === 0;
+  document.getElementById('hideSelectedBtn').disabled = count === 0;
+}
+
+document.getElementById('selectAllBtn').addEventListener('click', () => {
   const onlineTvs = tvList.filter(t => t.status !== 'offline');
-  if (selectedTvIds.size === onlineTvs.length) {
+  if (selectedTvIds.size === onlineTvs.length && onlineTvs.every(t => selectedTvIds.has(t.id))) {
     selectedTvIds.clear();
   } else {
     onlineTvs.forEach(tv => selectedTvIds.add(tv.id));
   }
-  updateSelectionUI();
   renderTvGrid();
 });
 
-sendToSelectedBtn.addEventListener('click', () => openSendModal([...selectedTvIds]));
-hideSelectedBtn.addEventListener('click', () => {
+document.getElementById('sendToSelectedBtn').addEventListener('click', () => openSendModal([...selectedTvIds]));
+document.getElementById('hideSelectedBtn').addEventListener('click', () => {
   if (!selectedTvIds.size) return;
   socket.emit('command', { tvIds: [...selectedTvIds], payload: { action: 'hide' } });
   showToast('Voltando ao standby…');
 });
+
+function powerTV(action, tvId) {
+  socket.emit('power_command', { tvIds: [tvId], action });
+  showToast(action === 'wake' ? 'Ligando TV…' : 'Desligando TV…');
+}
 
 // ── Send modal ────────────────────────────────────────────────────────────────
 let modalTargetIds = [];
 
 function openSendModal(tvIds) {
   modalTargetIds = tvIds;
-  sendModal.classList.remove('hidden');
-  modalType.value = '';
+  document.getElementById('sendModal').classList.remove('hidden');
+  document.getElementById('modalType').value = '';
   updateModalFields();
 }
+function closeModal() { document.getElementById('sendModal').classList.add('hidden'); }
 
-function closeModal() { sendModal.classList.add('hidden'); }
-sendModalClose.addEventListener('click', closeModal);
-sendModalCancelBtn.addEventListener('click', closeModal);
-sendModal.addEventListener('click', e => { if (e.target === sendModal) closeModal(); });
-
-modalType.addEventListener('change', updateModalFields);
+document.getElementById('sendModalClose').addEventListener('click', closeModal);
+document.getElementById('sendModalCancelBtn').addEventListener('click', closeModal);
+document.getElementById('sendModal').addEventListener('click', e => { if (e.target.id === 'sendModal') closeModal(); });
+document.getElementById('modalType').addEventListener('change', updateModalFields);
 
 function updateModalFields() {
-  const t = modalType.value;
-  modalUrlField.style.display  = ['url','youtube','slides','video'].includes(t) ? '' : 'none';
-  modalHtmlField.style.display = t === 'html' ? '' : 'none';
-  if (t === 'countdown') { modalCdFields.style.display = 'flex'; modalCdFields.style.flexDirection = 'column'; }
-  else modalCdFields.style.display = 'none';
+  const t = document.getElementById('modalType').value;
+  document.getElementById('modalUrlField').style.display  = ['url','youtube','slides','video'].includes(t) ? '' : 'none';
+  document.getElementById('modalHtmlField').style.display = t === 'html' ? '' : 'none';
+  const cdf = document.getElementById('modalCdFields');
+  if (t === 'countdown') { cdf.style.display = 'flex'; cdf.style.flexDirection = 'column'; }
+  else cdf.style.display = 'none';
 }
 updateModalFields();
 
-sendModalConfirmBtn.addEventListener('click', () => {
-  const t = modalType.value;
-  if (!t) { showToast('Selecione um tipo de conteúdo', 'error'); return; }
-
+document.getElementById('sendModalConfirmBtn').addEventListener('click', () => {
+  const t = document.getElementById('modalType').value;
+  if (!t) { showToast('Selecione um tipo', 'error'); return; }
   let content = { type: t };
   if (['url','youtube','slides','video'].includes(t)) {
-    if (!modalUrl.value) { showToast('URL obrigatória', 'error'); return; }
-    content.url = modalUrl.value;
+    const u = document.getElementById('modalUrl').value;
+    if (!u) { showToast('URL obrigatória', 'error'); return; }
+    content.url = u;
   }
   if (t === 'html') {
-    if (!modalHtml.value) { showToast('Texto obrigatório', 'error'); return; }
-    content.html = modalHtml.value;
+    const h = document.getElementById('modalHtml').value;
+    if (!h) { showToast('Texto obrigatório', 'error'); return; }
+    content.html = h;
   }
   if (t === 'countdown') {
-    content.title    = modalCdTitle.value || 'Iniciando em';
-    content.subtitle = modalCdSub.value;
-    content.durationMinutes = parseInt(modalCdMin.value) || 5;
+    content.title           = document.getElementById('modalCdTitle').value || 'Iniciando em';
+    content.subtitle        = document.getElementById('modalCdSub').value;
+    content.durationMinutes = parseInt(document.getElementById('modalCdMin').value) || 5;
   }
-
   socket.emit('command', { tvIds: modalTargetIds, payload: { action: 'show', content } });
   closeModal();
-  showToast(`Conteúdo enviado para ${modalTargetIds.length} TV${modalTargetIds.length>1?'s':''}!`);
+  showToast(`Enviado para ${modalTargetIds.length} TV${modalTargetIds.length > 1 ? 's' : ''}!`);
 });
 
-// ── Biblioteca ────────────────────────────────────────────────────────────────
+// ── Biblioteca de conteúdo ────────────────────────────────────────────────────
 async function loadContentLib() {
   try {
     const r = await fetch('/api/content', { headers: { 'x-flex-token': token } });
@@ -1068,12 +1039,14 @@ async function loadContentLib() {
 }
 
 function renderContentList() {
-  contentCountLabel.textContent = `${contentLib.length} item${contentLib.length!==1?'s':''}`;
+  const el = document.getElementById('contentList');
+  const cl = document.getElementById('contentCountLabel');
+  cl.textContent = `${contentLib.length} item${contentLib.length !== 1 ? 's' : ''}`;
   if (!contentLib.length) {
-    contentList.innerHTML = `<div style="text-align:center;color:var(--t3);padding:32px 16px;font-size:13px">Adicione conteúdo usando o formulário →</div>`;
+    el.innerHTML = `<div style="text-align:center;color:var(--t3);padding:32px 16px;font-size:13px">Adicione conteúdo usando o formulário →</div>`;
     return;
   }
-  contentList.innerHTML = contentLib.map(item => `
+  el.innerHTML = contentLib.map(item => `
     <div class="content-item" data-id="${item.id}">
       <span class="content-type-badge">${item.type}</span>
       <div style="flex:1;min-width:0">
@@ -1087,29 +1060,27 @@ function renderContentList() {
     </div>`).join('');
 }
 
-newType.addEventListener('change', () => {
-  const t = newType.value;
+document.getElementById('newType').addEventListener('change', () => {
+  const t = document.getElementById('newType').value;
   document.getElementById('urlField').style.display  = ['url','youtube','slides','video'].includes(t) ? '' : 'none';
   document.getElementById('htmlField').style.display = t === 'html' ? '' : 'none';
-  const cdF = document.getElementById('countdownFields');
-  if (t === 'countdown') { cdF.style.display = 'flex'; cdF.style.flexDirection = 'column'; }
-  else cdF.style.display = 'none';
+  const cdf = document.getElementById('countdownFields');
+  if (t === 'countdown') { cdf.style.display = 'flex'; cdf.style.flexDirection = 'column'; }
+  else cdf.style.display = 'none';
 });
 
-addContentBtn.addEventListener('click', async () => {
-  const t = newType.value;
-  const label = newLabel.value.trim();
+document.getElementById('addContentBtn').addEventListener('click', async () => {
+  const t     = document.getElementById('newType').value;
+  const label = document.getElementById('newLabel').value.trim();
   if (!label) { showToast('Nome obrigatório', 'error'); return; }
-
   const body = { label, type: t };
-  if (['url','youtube','slides','video'].includes(t)) body.url = newUrl.value;
-  if (t === 'html') body.html = newHtml.value;
+  if (['url','youtube','slides','video'].includes(t)) body.url = document.getElementById('newUrl').value;
+  if (t === 'html') body.html = document.getElementById('newHtml').value;
   if (t === 'countdown') body.countdown = {
     title: document.getElementById('cdTitle').value || 'Iniciando em',
     subtitle: document.getElementById('cdSubtitle').value,
     durationMinutes: parseInt(document.getElementById('cdMinutes').value) || 5
   };
-
   try {
     const r = await fetch('/api/content', {
       method: 'POST',
@@ -1119,7 +1090,9 @@ addContentBtn.addEventListener('click', async () => {
     const item = await r.json();
     contentLib.unshift(item);
     renderContentList();
-    newLabel.value = ''; newUrl.value = ''; newHtml.value = '';
+    document.getElementById('newLabel').value = '';
+    document.getElementById('newUrl').value = '';
+    document.getElementById('newHtml').value = '';
     showToast('Conteúdo adicionado!');
   } catch { showToast('Erro ao salvar', 'error'); }
 });
@@ -1137,133 +1110,87 @@ function sendLibItem(id) {
   const item = contentLib.find(c => c.id === id);
   if (!item) return;
   const targets = selectedTvIds.size > 0 ? [...selectedTvIds] : 'all';
-  const content = { type: item.type, url: item.url, html: item.html, label: item.label, ...(item.countdown || {}) };
-  socket.emit('command', { tvIds: targets, payload: { action: 'show', content } });
-  const count = typeof targets === 'string' ? 'todas as TVs' : `${targets.length} TV${targets.length>1?'s':''}`;
+  socket.emit('command', { tvIds: targets, payload: { action: 'show', content: { type: item.type, url: item.url, html: item.html, label: item.label, ...(item.countdown || {}) } } });
+  const count = typeof targets === 'string' ? 'todas as TVs' : `${targets.length} TV${targets.length > 1 ? 's' : ''}`;
   showToast(`Enviado para ${count}!`);
 }
 
 // ── Ao Vivo ───────────────────────────────────────────────────────────────────
-startLiveBtn.addEventListener('click', () => {
-  const url = hlsUrl.value.trim();
+document.getElementById('startLiveBtn').addEventListener('click', () => {
+  const url = document.getElementById('hlsUrl').value.trim();
   if (!url) { showToast('Cole a URL HLS do Mediamtx', 'error'); return; }
   socket.emit('command', { tvIds: 'all', payload: { action: 'show', content: { type: 'video', url, label: 'AO VIVO', loop: false } } });
-  isStreaming = true;
-  liveDot.classList.add('streaming');
-  liveStatusLabel.textContent = 'Transmissão ativa — todas as TVs';
-  startLiveBtn.disabled = true;
-  stopLiveBtn.disabled = false;
+  document.getElementById('liveDot').classList.add('streaming');
+  document.getElementById('liveStatusLabel').textContent = 'Transmissão ativa — todas as TVs';
+  document.getElementById('startLiveBtn').disabled = true;
+  document.getElementById('stopLiveBtn').disabled = false;
   showToast('Transmissão ao vivo iniciada!');
 });
 
-stopLiveBtn.addEventListener('click', () => {
+document.getElementById('stopLiveBtn').addEventListener('click', () => {
   socket.emit('command', { tvIds: 'all', payload: { action: 'hide' } });
-  isStreaming = false;
-  liveDot.classList.remove('streaming');
-  liveStatusLabel.textContent = 'Sem transmissão ativa';
-  startLiveBtn.disabled = false;
-  stopLiveBtn.disabled = true;
+  document.getElementById('liveDot').classList.remove('streaming');
+  document.getElementById('liveStatusLabel').textContent = 'Sem transmissão ativa';
+  document.getElementById('startLiveBtn').disabled = false;
+  document.getElementById('stopLiveBtn').disabled = true;
   showToast('Transmissão encerrada');
 });
 
-// ── Bridge status ─────────────────────────────────────────────────────────────
-const bridgeBadge  = document.getElementById('bridgeBadge');
-const bridgeLabel  = document.getElementById('bridgeLabel');
-const bridgeBanner = document.getElementById('bridgeBanner');
-
-function updateBridgeStatus(connected) {
-  bridgeConnected = connected;
-  bridgeBadge.classList.toggle('ok', connected);
-  bridgeLabel.textContent = connected ? 'Bridge online' : 'Bridge offline';
-  bridgeBadge.title = connected
-    ? 'Agente local conectado — pode ligar/desligar TVs'
-    : 'Agente local offline — rode: node bridge/agent.js no PC da rede';
-  bridgeBanner.classList.toggle('hidden', connected);
-  renderTvGrid();
-}
-
-// ── Controle de energia ───────────────────────────────────────────────────────
-const wakeAllBtn     = document.getElementById('wakeAllBtn');
-const powerOffAllBtn = document.getElementById('powerOffAllBtn');
-
-wakeAllBtn.addEventListener('click', () => {
-  if (!bridgeConnected) { showToast('Bridge offline — rode node bridge/agent.js', 'error'); return; }
-  socket.emit('power_command', { tvIds: 'all', action: 'wake' });
-  showToast('Enviando sinal de ligar para todas as TVs…');
-});
-powerOffAllBtn.addEventListener('click', () => {
-  if (!bridgeConnected) { showToast('Bridge offline — rode node bridge/agent.js', 'error'); return; }
-  socket.emit('power_command', { tvIds: 'all', action: 'power_off' });
-  showToast('Enviando sinal de desligar para todas as TVs…');
-});
-
-function powerTV(action, tvId) {
-  socket.emit('power_command', { tvIds: [tvId], action });
-  showToast(action === 'wake' ? 'Ligando TV…' : 'Desligando TV…');
-}
-
-// ── Modal configuração de TV ──────────────────────────────────────────────────
-const configModal          = document.getElementById('configModal');
-const configModalClose     = document.getElementById('configModalClose');
-const configModalCancelBtn = document.getElementById('configModalCancelBtn');
-const configModalSaveBtn   = document.getElementById('configModalSaveBtn');
-const cfgName = document.getElementById('cfgName');
-const cfgMac  = document.getElementById('cfgMac');
-const cfgIp   = document.getElementById('cfgIp');
+// ── Config modal ──────────────────────────────────────────────────────────────
 let configTargetTvId = null;
 
 function openConfigModal(tvId) {
   configTargetTvId = tvId;
   const tv = tvList.find(t => t.id === tvId);
-  cfgName.value = tv?.config?.name || tv?.name || '';
-  cfgMac.value  = tv?.config?.mac  || '';
-  cfgIp.value   = tv?.config?.ip   || '';
-  configModal.classList.remove('hidden');
+  document.getElementById('cfgName').value = tv?.config?.name || tv?.name || '';
+  document.getElementById('cfgMac').value  = tv?.config?.mac  || '';
+  document.getElementById('cfgIp').value   = tv?.config?.ip   || '';
+  document.getElementById('configModal').classList.remove('hidden');
 }
+function closeConfigModal() { document.getElementById('configModal').classList.add('hidden'); configTargetTvId = null; }
 
-function closeConfigModal() { configModal.classList.add('hidden'); configTargetTvId = null; }
-configModalClose.addEventListener('click', closeConfigModal);
-configModalCancelBtn.addEventListener('click', closeConfigModal);
-configModal.addEventListener('click', e => { if (e.target === configModal) closeConfigModal(); });
+document.getElementById('configModalClose').addEventListener('click', closeConfigModal);
+document.getElementById('configModalCancelBtn').addEventListener('click', closeConfigModal);
+document.getElementById('configModal').addEventListener('click', e => { if (e.target.id === 'configModal') closeConfigModal(); });
 
-configModalSaveBtn.addEventListener('click', async () => {
+document.getElementById('configModalSaveBtn').addEventListener('click', async () => {
   if (!configTargetTvId) return;
   try {
     await fetch('/api/tv-config', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-flex-token': token },
-      body: JSON.stringify({ tvId: configTargetTvId, mac: cfgMac.value.trim(), ip: cfgIp.value.trim(), name: cfgName.value.trim() })
+      body: JSON.stringify({
+        tvId: configTargetTvId,
+        mac:  document.getElementById('cfgMac').value.trim(),
+        ip:   document.getElementById('cfgIp').value.trim(),
+        name: document.getElementById('cfgName').value.trim()
+      })
     });
     showToast('Configuração salva!');
     closeConfigModal();
-  } catch { showToast('Erro ao salvar configuração', 'error'); }
+  } catch { showToast('Erro ao salvar', 'error'); }
 });
 
 // ── Importar TVs ──────────────────────────────────────────────────────────────
-const importTvsBtn   = document.getElementById('importTvsBtn');
-const importTvsInput = document.getElementById('importTvsInput');
-
-importTvsBtn.addEventListener('click', () => importTvsInput.click());
-
-importTvsInput.addEventListener('change', async () => {
-  const file = importTvsInput.files[0];
+document.getElementById('importTvsBtn').addEventListener('click', () => {
+  document.getElementById('importTvsInput').click();
+});
+document.getElementById('importTvsInput').addEventListener('change', async () => {
+  const file = document.getElementById('importTvsInput').files[0];
   if (!file) return;
-  importTvsInput.value = '';
+  document.getElementById('importTvsInput').value = '';
   try {
-    const text = await file.text();
-    const list = JSON.parse(text);
-    if (!Array.isArray(list)) throw new Error('Formato inválido — esperado array JSON');
+    const list = JSON.parse(await file.text());
+    if (!Array.isArray(list)) throw new Error('Formato inválido');
     const r = await fetch('/api/import-tvs', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-flex-token': token },
       body: JSON.stringify({ tvs: list })
     });
     const data = await r.json();
-    if (!r.ok) throw new Error(data.error || 'Erro no servidor');
+    if (!r.ok) throw new Error(data.error);
     showToast(`${data.imported} TV${data.imported !== 1 ? 's' : ''} importada${data.imported !== 1 ? 's' : ''}!`);
-  } catch(e) {
-    showToast('Erro ao importar: ' + e.message, 'error');
-  }
+  } catch(e) { showToast('Erro: ' + e.message, 'error'); }
 });
 
 // ── Utils ─────────────────────────────────────────────────────────────────────
